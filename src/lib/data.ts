@@ -1,4 +1,4 @@
-import type { Sex, RelationshipType, User, Relationship, MomentEntity } from './types';
+import type { Sex, RelationshipType, User, Relationship, MomentEntity, MemoryEntity, MomentUserView } from './types';
 
 export const INITIAL_SEXES: Sex[] = [
 	{
@@ -100,15 +100,53 @@ export const INITIAL_RELATIONSHIPS: Relationship[] = [
 	}
 ];
 
+export const INITIAL_MEMORIES: MemoryEntity[] = [
+	{
+		id              : 'mem_1',
+		relationship_id : 'rel_1',
+		title           : 'Viaje a las Montañas',
+		description     : 'Nuestra primera gran aventura juntos en la cordillera.',
+		cover_url       : 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=800',
+		created_by      : 'user_1',
+		created_at      : '2023-10-10T10:00:00.000Z',
+		updated_at      : '2023-10-10T10:00:00.000Z'
+	},
+	{
+		id              : 'mem_2',
+		relationship_id : 'rel_1',
+		title           : 'Cena de Aniversario Secreta',
+		description     : 'Momentos y dedicatorias privadas de nuestro aniversario.',
+		cover_url       : 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&q=80&w=800',
+		created_by      : 'user_1',
+		created_at      : '2024-02-14T20:00:00.000Z',
+		updated_at      : '2024-02-14T20:00:00.000Z',
+		is_blocked      : true,
+		password        : '1234'
+	},
+	{
+		id              : 'mem_3',
+		relationship_id : 'rel_2',
+		title           : 'Historia de Familia',
+		description     : 'Recetas, consejos y anécdotas compartidas por los abuelos.',
+		cover_url       : 'https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&q=80&w=800',
+		created_by      : 'user_1',
+		created_at      : '2023-11-20T12:00:00.000Z',
+		updated_at      : '2023-11-20T12:00:00.000Z'
+	}
+];
+
 export const INITIAL_MOMENTS: MomentEntity[] = [
 	{
 		id              : '1',
 		relationship_id : 'rel_1',
-		type            : 'image',
-		title           : 'Amanecer en la Montaña',
-		content         : '',
+		memory_id       : 'mem_1',
+		title           : 'Amanecer en la Cumbre',
+		content         : 'El frío valió la pena por este amanecer inolvidable.',
 		author          : 'Elena',
-		date            : '12 Oct 2023',
+		created_by      : 'user_1',
+		created_at      : '2023-10-12T08:30:00.000Z',
+		capture_date    : '2023-10-12',
+		tags            : [ 'image', 'text' ],
 		metadata        : {
 			imageUrl : 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=800'
 		}
@@ -116,47 +154,97 @@ export const INITIAL_MOMENTS: MomentEntity[] = [
 	{
 		id              : '2',
 		relationship_id : 'rel_1',
-		type            : 'quote',
+		memory_id       : 'mem_1',
+		title           : 'Frase del Viaje',
 		content         : 'La vida no se mide por las veces que respiras, sino por los momentos que te dejan sin aliento.',
-		author          : 'Papá',
-		date            : '5 Nov 2023'
+		author          : 'Kevin',
+		created_by      : 'user_1',
+		created_at      : '2023-10-13T14:00:00.000Z',
+		capture_date    : '2023-10-13',
+		tags            : [ 'text', 'quote' ],
+		metadata        : {
+			bgColor : '#fdf2f8'
+		}
 	},
 	{
 		id              : '3',
+		relationship_id : 'rel_1',
+		title           : 'Sorpresa Efímera Especial',
+		content         : '¡Este mensaje solo se puede ver una vez!',
+		author          : 'Elena',
+		created_by      : 'user_2',
+		created_at      : '2023-11-05T19:00:00.000Z',
+		capture_date    : '2023-11-05',
+		tags            : [ 'image', 'text' ],
+		metadata        : {
+			imageUrl    : 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?auto=format&fit=crop&q=80&w=800',
+			is_temporal : true
+		}
+	},
+	{
+		id              : '4',
+		relationship_id : 'rel_1',
+		title           : 'Cápsula Bloqueada',
+		content         : 'Clave para ver: 1234. Nuestro secreto mejor guardado.',
+		author          : 'Kevin',
+		created_by      : 'user_1',
+		created_at      : '2023-11-08T22:00:00.000Z',
+		capture_date    : '2023-11-08',
+		tags            : [ 'text', 'quote' ],
+		metadata        : {
+			is_blocked : true,
+			password   : '1234',
+			bgColor    : '#fef3c7'
+		}
+	},
+	{
+		id              : '5',
 		relationship_id : 'rel_2',
-		type            : 'video',
+		memory_id       : 'mem_3',
 		title           : 'Primeros pasos de Luca',
-		content         : '',
+		content         : 'El día en que comenzó a caminar.',
 		author          : 'Mamá',
-		date            : '15 Nov 2023',
+		created_by      : 'user_1',
+		created_at      : '2023-11-15T16:00:00.000Z',
+		capture_date    : '2023-11-15',
+		tags            : [ 'video', 'image', 'text' ],
 		metadata        : {
 			videoUrl : 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
 			imageUrl : 'https://images.unsplash.com/photo-1544126592-807ade215a0b?auto=format&fit=crop&q=80&w=800'
 		}
 	},
 	{
-		id              : '4',
+		id              : '6',
 		relationship_id : 'rel_2',
-		type            : 'text',
+		memory_id       : 'mem_3',
 		title           : 'Receta Secreta del Abuelo',
 		content         : 'Para que la salsa quede perfecta, el secreto está en añadir una pizca de canela justo antes de apagar el fuego. Nunca lo olvides.',
 		author          : 'Abuelo Juan',
-		date            : '28 Nov 2023'
+		created_by      : 'user_1',
+		created_at      : '2023-11-28T11:00:00.000Z',
+		capture_date    : '2023-11-28',
+		tags            : [ 'text', 'quote' ],
+		metadata        : {
+			bgColor : '#ecfdf5'
+		}
 	},
 	{
-		id              : '5',
+		id              : '7',
 		relationship_id : 'rel_3',
-		type            : 'meme',
 		title           : 'Cuando se cae producción',
 		content         : 'Pero te acuerdas que es viernes a las 6pm',
 		author          : 'Carlos',
-		date            : '1 Dic 2023',
+		created_by      : 'user_3',
+		created_at      : '2023-12-01T18:05:00.000Z',
+		capture_date    : '2023-12-01',
+		tags            : [ 'image', 'text' ],
 		metadata        : {
 			imageUrl : 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&q=80&w=800'
 		}
 	}
 ];
 
+export const INITIAL_USER_VIEWS: MomentUserView[] = [];
+
 // Compatibilidad
 export const INITIAL_GROUPS = INITIAL_RELATIONSHIPS;
-export const INITIAL_MEMORIES = INITIAL_MOMENTS;
