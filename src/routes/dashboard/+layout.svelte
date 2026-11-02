@@ -2,10 +2,10 @@
 	import { page } from '$app/state';
 	import type { Snippet } from 'svelte';
 	import { memoriesStore } from '$lib/store.svelte';
-	import type { Relationship, MomentEntity } from '$lib/types';
+	import type { Relationship, MomentEntity, MemoryEntity } from '$lib/types';
 	import GroupEditor from '$lib/components/GroupEditor.svelte';
 	import UploadModal from '$lib/components/UploadModal.svelte';
-	import RelationshipsSidebar from '$lib/components/RelationshipsSidebar.svelte';
+	import RelationshipsSidebar from '$lib/components/relationship/RelationshipsSidebar.svelte';
 	import DashboardHeader from '$lib/components/DashboardHeader.svelte';
 	import {
 		useRelationshipsQuery,
@@ -46,7 +46,14 @@
 		relationshipsList.find( ( r: Relationship ) => r.path_name === currentPathName ) || relationshipsList[0]
 	);
 
-	function handleAddMemory( partialMemory: Partial<MomentEntity> ): void {
+	function handleAddMoment( partialMoment: Partial<MomentEntity> ): void {
+		memoriesStore.addMoment( {
+			...partialMoment,
+			relationship_id : currentRelationship?.id || 'rel_1'
+		} );
+	}
+
+	function handleAddMemory( partialMemory: Partial<MemoryEntity> ): void {
 		memoriesStore.addMemory( {
 			...partialMemory,
 			relationship_id : currentRelationship?.id || 'rel_1'
@@ -102,8 +109,10 @@
 
 <UploadModal
 	isOpen={isUploadOpen}
+	relationshipId={currentRelationship?.id || 'rel_1'}
 	onClose={() => ( isUploadOpen = false )}
-	onAdd={handleAddMemory}
+	onCreateMoment={handleAddMoment}
+	onCreateMemory={handleAddMemory}
 />
 
 {#if isGroupEditorOpen}
