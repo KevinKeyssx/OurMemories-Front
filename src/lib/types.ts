@@ -30,39 +30,45 @@ export interface User {
 }
 
 export interface Relationship {
-	id          : string;
-	created_by  : string;
-	updated_by  : string;
-	name        : string;
-	path_name   : string;
-	avatar      : string;
-	points      : number;
-	created_at  : string;
-	updated_at  : string;
-	is_active   : boolean;
-	type_id     : string;
-	color       : string;
+	id         : string;
+	created_by : string;
+	updated_by : string;
+	name       : string;
+	path_name  : string;
+	avatar     : string;
+	points     : number;
+	created_at : string;
+	updated_at : string;
+	is_active  : boolean;
+	type_id    : string;
+	color      : string;
 }
 
-export interface MemoryMetadata {
-	videoUrl ?: string;
-	imageUrl ?: string;
-	bgColor  ?: string;
-}
+export type MomentTag = 'image' | 'video' | 'text' | 'quote';
 
-export type MomentType = 'image' | 'quote' | 'text' | 'video' | 'meme';
+export interface MomentMetadata {
+	imageUrl    ?: string;
+	videoUrl    ?: string;
+	bgColor     ?: string;
+	is_blocked  ?: boolean;
+	password    ?: string;
+	timer       ?: number;
+	is_temporal ?: boolean;
+}
 
 export interface MomentEntity {
-	id               : string;
-	relationship_id  : string;
-	memory_id       ?: string;
-	type             : MomentType;
-	title           ?: string;
-	content         ?: string;
-	author           : string;
-	date             : string;
-	metadata        ?: MemoryMetadata;
-	tags            ?: string[];
+	id              : string;
+	relationship_id : string;
+	memory_id      ?: string;
+	title          ?: string;
+	content        ?: string;
+	author          : string;
+	created_by      : string;
+	created_at      : string;
+	updated_at     ?: string;
+	capture_date   ?: string;
+	metadata       ?: MomentMetadata;
+	tags            : MomentTag[];
 }
 
 export interface MemoryEntity {
@@ -71,11 +77,23 @@ export interface MemoryEntity {
 	title           : string;
 	description    ?: string;
 	cover_url      ?: string;
+	created_by      : string;
 	created_at      : string;
-	moments         : MomentEntity[];
+	updated_at      : string;
+	is_blocked     ?: boolean;
+	password       ?: string;
+	timer          ?: number;
+	moments        ?: MomentEntity[];
 }
 
-// Compatibilidad hacia atrás durante la migración de recuerdos
-export type MemoryType = MomentType;
+export interface MomentUserView {
+	id        : string;
+	moment_id : string;
+	user_id   : string;
+	viewed_at : string;
+}
+
+// Compatibilidad hacia atrás durante la migración
+export type MomentType = MomentTag;
 export type Memory = MomentEntity;
 export type Group = Relationship;
