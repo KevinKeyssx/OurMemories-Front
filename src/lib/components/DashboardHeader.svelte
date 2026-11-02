@@ -89,10 +89,10 @@
 					type="button"
 					onclick={onOpenUploadModal}
 					class="p-2.5 rounded-2xl text-white shadow-lg active:scale-95 transition-all hover:brightness-110"
-					style="background-color: {currentRelationship?.color || '#f43f5e'}; box-shadow: 0 8px 20px -4px {currentRelationship?.color || '#f43f5e'}66;"
-					aria-label="Nuevo recuerdo"
+					style="background-color: { currentRelationship?.color || '#f43f5e' }; box-shadow: 0 8px 20px -4px { currentRelationship?.color || '#f43f5e' }66;"
+					aria-label="Nuevo"
 				>
-					<Plus size={18} />
+					<Plus size={ 18 } />
 				</button>
 			</div>
 		</div>
@@ -191,15 +191,15 @@
 				{/if}
 			</button>
 
-			<!-- Botón Nuevo Recuerdo (Desktop) -->
+			<!-- Botón Nuevo (Desktop) -->
 			<button
 				type="button"
 				onclick={onOpenUploadModal}
 				class="hidden md:flex items-center gap-2 px-5 py-3 rounded-2xl text-white font-semibold text-xs uppercase tracking-wider shadow-lg active:scale-95 transition-all whitespace-nowrap hover:brightness-110"
-				style="background-color: {currentRelationship?.color || '#f43f5e'}; box-shadow: 0 10px 25px -5px {currentRelationship?.color || '#f43f5e'}66;"
+				style="background-color: { currentRelationship?.color || '#f43f5e' }; box-shadow: 0 10px 25px -5px { currentRelationship?.color || '#f43f5e' }66;"
 			>
-				<Plus size={16} />
-				<span class="hidden lg:block">Nuevo Recuerdo</span>
+				<Plus size={ 16 } />
+				<span class="hidden lg:block">Nuevo</span>
 			</button>
 		</div>
 	</header>
