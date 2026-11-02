@@ -54,7 +54,7 @@
 	>
 		<Select.Trigger
 			{id}
-			class="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-stone-900 border border-stone-200/70 dark:border-white/10 text-sm font-semibold text-stone-800 dark:text-stone-100 flex items-center justify-between gap-3 shadow-sm transition-all hover:border-stone-300 dark:hover:border-white/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/40 data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed group {customClass}"
+			class="w-full px-4 py-2.5 rounded-2xl bg-stone-100 dark:bg-white/4 border border-stone-200/80 dark:border-white/10 text-xs font-semibold text-stone-800 dark:text-stone-100 flex items-center justify-between gap-3 shadow-xs transition-all hover:border-brand-accent/50 hover:bg-stone-50 dark:hover:bg-white/[0.07] focus:outline-hidden focus:border-brand-accent data-disabled:opacity-50 data-disabled:cursor-not-allowed group {customClass}"
 			aria-label={label || placeholder}
 		>
 			<div class="flex items-center gap-2 truncate text-left">
@@ -75,15 +75,15 @@
 			</div>
 
 			<ChevronDown
-				size={16}
+				size={ 16 }
 				class="text-stone-400 shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180"
 			/>
 		</Select.Trigger>
 
 		<Select.Portal>
 			<Select.Content
-				class="z-50 min-w-[var(--bits-select-anchor-width)] max-h-72 overflow-y-auto rounded-2xl bg-white dark:bg-dark-card border border-stone-200/80 dark:border-white/10 shadow-2xl p-1.5 backdrop-blur-xl no-scrollbar animate-in fade-in-0 zoom-in-95"
-				sideOffset={6}
+				class="z-50 min-w-(--bits-select-anchor-width) max-h-72 overflow-y-auto rounded-2xl bg-white dark:bg-[#180D2E] border border-stone-200/80 dark:border-white/15 shadow-2xl p-1.5 backdrop-blur-xl no-scrollbar animate-in fade-in-0 zoom-in-95"
+				sideOffset={ 6 }
 			>
 				<Select.Viewport class="p-1 space-y-1">
 					{#each items as item (item.value)}
@@ -91,22 +91,22 @@
 							value={item.value}
 							label={item.label}
 							disabled={item.disabled}
-							class="w-full px-3.5 py-2.5 rounded-xl text-sm cursor-pointer select-none outline-none flex items-center justify-between transition-colors data-[highlighted]:bg-stone-100 dark:data-[highlighted]:bg-white/5 data-[disabled]:opacity-40 data-[disabled]:pointer-events-none text-stone-800 dark:text-stone-100"
+							class="w-full px-3.5 py-2.5 rounded-xl text-xs cursor-pointer select-none outline-hidden flex items-center justify-between transition-colors data-highlighted:bg-brand-accent/15 dark:data-highlighted:bg-brand-accent/25 data-highlighted:text-brand-accent data-disabled:opacity-40 data-disabled:pointer-events-none text-stone-800 dark:text-stone-100"
 						>
 							{#snippet children({ selected })}
 								<div class="flex flex-col text-left pr-3">
-									<span class="font-bold text-sm text-stone-800 dark:text-stone-100">
+									<span class="font-bold text-xs text-stone-800 dark:text-stone-100">
 										{item.label}
 									</span>
 									{#if item.description}
-										<span class="text-xs text-stone-400 font-normal mt-0.5">
+										<span class="text-[11px] text-stone-400 font-normal mt-0.5">
 											{item.description}
 										</span>
 									{/if}
 								</div>
 
 								{#if selected}
-									<Check size={16} class="text-brand-accent shrink-0 ml-2" />
+									<Check size={ 15 } class="text-brand-accent shrink-0 ml-2" />
 								{/if}
 							{/snippet}
 						</Select.Item>
