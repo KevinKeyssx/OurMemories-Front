@@ -52,7 +52,7 @@
     $effect( () => {
 		if ( dateValue ) {
 			const dateStr = dateValue.toString();
-	
+
             if ( dateStr !== value ) {
 				value = dateStr;
 			}
