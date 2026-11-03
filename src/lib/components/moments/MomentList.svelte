@@ -1,5 +1,7 @@
 <script lang="ts">
-	import {
+    import type { Component } from 'svelte';
+
+    import {
 		Search,
 		Sparkles,
 		Image as ImageIcon,
@@ -9,16 +11,20 @@
 		Layers,
 		Compass
 	} from '@lucide/svelte';
-	import type { Component } from 'svelte';
-	import type { MomentEntity, MomentTag } from '$lib/types';
+
+    import type { MomentEntity, MomentTag } from '$lib/types';
 	import { memoriesStore } from '$lib/store.svelte';
 	import MomentCard from './MomentCard.svelte';
+	import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte';
+	import UploadModal from '$lib/components/UploadModal.svelte';
 
 	interface Props {
 		moments        : MomentEntity[];
 		currentUserId  : string;
 		relationName  ?: string;
+		color         ?: string;
 		onDelete      ?: ( id: string ) => void;
+		onEdit        ?: ( moment: MomentEntity ) => void;
 		onUnlock      ?: ( moment: MomentEntity ) => void;
 		onRecordView  ?: ( momentId: string ) => void;
 	}
@@ -27,7 +33,9 @@
 		moments,
 		currentUserId,
 		relationName = 'Relación',
+		color = '#f43f5e',
 		onDelete,
+		onEdit,
 		onUnlock,
 		onRecordView
 	}: Props = $props();
@@ -35,6 +43,37 @@
 	let searchQuery = $state<string>( '' );
 	let selectedScope = $state<'all' | 'standalone'>( 'all' );
 	let selectedTag = $state<MomentTag | 'all'>( 'all' );
+
+	let editingMoment = $state<MomentEntity | null>( null );
+	let momentIdToDelete = $state<string | null>( null );
+	let isConfirmDeleteOpen = $state<boolean>( false );
+
+	function handleRequestEdit( moment: MomentEntity ): void {
+		if ( onEdit ) {
+			onEdit( moment );
+		} else {
+			editingMoment = moment;
+		}
+	}
+
+	function handleRequestDelete( id: string ): void {
+		momentIdToDelete = id;
+		isConfirmDeleteOpen = true;
+	}
+
+	function handleConfirmDelete(): void {
+		if ( momentIdToDelete ) {
+			memoriesStore.deleteMoment( momentIdToDelete );
+			onDelete?.( momentIdToDelete );
+			momentIdToDelete = null;
+		}
+		isConfirmDeleteOpen = false;
+	}
+
+	function handleCancelDelete(): void {
+		momentIdToDelete = null;
+		isConfirmDeleteOpen = false;
+	}
 
 	interface TagFilterOption {
 		id    : MomentTag | 'all';
@@ -88,7 +127,13 @@
 				type="text"
 				bind:value={searchQuery}
 				placeholder="Buscar momentos por título, autor o contenido..."
-				class="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-stone-100 dark:bg-white/5 border border-stone-200/70 dark:border-white/10 text-xs font-medium focus:outline-hidden focus:border-brand-accent transition-colors"
+				class="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-stone-100 dark:bg-white/5 border border-stone-200/70 dark:border-white/10 text-xs font-medium focus:outline-hidden transition-colors"
+				onfocus={( e: FocusEvent ) => {
+					( e.currentTarget as HTMLInputElement ).style.borderColor = color;
+				}}
+				onblur={( e: FocusEvent ) => {
+					( e.currentTarget as HTMLInputElement ).style.borderColor = '';
+				}}
 			/>
 		</div>
 
@@ -97,7 +142,8 @@
 			<button
 				type="button"
 				onclick={() => ( selectedScope = 'all' )}
-				class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all { selectedScope === 'all' ? 'bg-white dark:bg-stone-800 text-brand-ink dark:text-white shadow-sm' : 'text-stone-500 hover:text-stone-800 dark:hover:text-stone-200' }"
+				class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer { selectedScope === 'all' ? 'shadow-xs' : 'text-stone-500 hover:text-stone-800 dark:hover:text-stone-200' }"
+				style={ selectedScope === 'all' ? `background-color: ${ color }1f; color: ${ color }; border: 1px solid ${ color }4d;` : 'border: 1px solid transparent;' }
 			>
 				<Layers size={ 13 } />
 				<span>Todos ( { moments.length } )</span>
@@ -106,7 +152,8 @@
 			<button
 				type="button"
 				onclick={() => ( selectedScope = 'standalone' )}
-				class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all { selectedScope === 'standalone' ? 'bg-white dark:bg-stone-800 text-brand-ink dark:text-white shadow-sm' : 'text-stone-500 hover:text-stone-800 dark:hover:text-stone-200' }"
+				class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer { selectedScope === 'standalone' ? 'shadow-xs' : 'text-stone-500 hover:text-stone-800 dark:hover:text-stone-200' }"
+				style={ selectedScope === 'standalone' ? `background-color: ${ color }1f; color: ${ color }; border: 1px solid ${ color }4d;` : 'border: 1px solid transparent;' }
 			>
 				<Compass size={ 13 } />
 				<span>Sueltos ( { moments.filter( ( m ) => !m.memory_id ).length } )</span>
@@ -122,7 +169,8 @@
 			<button
 				type="button"
 				onclick={() => ( selectedTag = filterItem.id )}
-				class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all active:scale-95 { isSelected ? 'bg-brand-accent text-white shadow-md shadow-brand-accent/25' : 'bg-stone-100 dark:bg-white/5 text-stone-600 dark:text-stone-300 hover:bg-stone-200/70 dark:hover:bg-white/10' }"
+				class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all active:scale-95 cursor-pointer { isSelected ? 'text-white' : 'bg-stone-100 dark:bg-white/5 text-stone-600 dark:text-stone-300 hover:bg-stone-200/70 dark:hover:bg-white/10' }"
+				style={ isSelected ? `background-color: ${ color }; box-shadow: 0 4px 14px -2px ${ color }66;` : '' }
 			>
 				<TagIcon size={ 13 } />
 				<span>{ filterItem.label }</span>
@@ -154,7 +202,8 @@
 					{moment}
 					{currentUserId}
 					isViewed={memoriesStore.hasUserViewedMoment( moment.id, currentUserId )}
-					{onDelete}
+					onEdit={handleRequestEdit}
+					onDelete={handleRequestDelete}
 					{onUnlock}
 					{onRecordView}
 				/>
@@ -162,3 +211,23 @@
 		</div>
 	{/if}
 </div>
+
+<!-- Modal de Edición de Momento (Reutiliza UploadModal adaptado para edición) -->
+<UploadModal
+	isOpen={Boolean( editingMoment )}
+	editingMoment={editingMoment}
+	relationshipId={editingMoment?.relationship_id}
+	onClose={() => ( editingMoment = null )}
+/>
+
+<!-- Modal de Alerta de Confirmación Reutilizable -->
+<ConfirmDialog
+	isOpen={isConfirmDeleteOpen}
+	title="¿Eliminar este momento?"
+	description="Esta acción eliminará el momento de forma permanente. No se podrá recuperar."
+	confirmText="Sí, eliminar"
+	cancelText="Cancelar"
+	variant="danger"
+	onConfirm={handleConfirmDelete}
+	onClose={handleCancelDelete}
+/>
