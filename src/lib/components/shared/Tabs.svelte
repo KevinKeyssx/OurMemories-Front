@@ -13,6 +13,7 @@
 		tabs      : TabItem[];
 		activeId  : string;
 		size     ?: TabSize;
+		color    ?: string;
 		onChange ?: ( id: string ) => void;
 		class    ?: string;
 	}
@@ -21,6 +22,7 @@
 		tabs,
 		activeId = $bindable(),
 		size = 'normal',
+		color,
 		onChange,
 		class: customClass = ''
 	}: Props = $props();
@@ -42,13 +44,13 @@
 	{#if tabs.length > 0}
 		{#if size === 'small'}
 			<div
-				class="absolute top-0.5 bottom-0.5 rounded-lg bg-linear-to-r from-brand-accent to-purple-600 shadow-md shadow-brand-accent/25 transition-all duration-300 ease-out pointer-events-none"
-				style="width: calc((100% - 4px) / { tabs.length }); left: calc(2px + { activeIndex } * ((100% - 4px) / { tabs.length }));"
+				class="absolute top-0.5 bottom-0.5 rounded-lg transition-all duration-300 ease-out pointer-events-none { color ? '' : 'bg-linear-to-r from-brand-accent to-purple-600 shadow-md shadow-brand-accent/25' }"
+				style="width: calc((100% - 4px) / { tabs.length }); left: calc(2px + { activeIndex } * ((100% - 4px) / { tabs.length })); { color ? `background: ${ color }; box-shadow: 0 4px 14px -2px ${ color }66;` : '' }"
 			></div>
 		{:else}
 			<div
-				class="absolute top-1 bottom-1 rounded-xl bg-linear-to-r from-brand-accent to-purple-600 shadow-lg shadow-brand-accent/30 transition-all duration-300 ease-out pointer-events-none"
-				style="width: calc((100% - 8px) / { tabs.length }); left: calc(4px + { activeIndex } * ((100% - 8px) / { tabs.length }));"
+				class="absolute top-1 bottom-1 rounded-xl transition-all duration-300 ease-out pointer-events-none { color ? '' : 'bg-linear-to-r from-brand-accent to-purple-600 shadow-lg shadow-brand-accent/30' }"
+				style="width: calc((100% - 8px) / { tabs.length }); left: calc(4px + { activeIndex } * ((100% - 8px) / { tabs.length })); { color ? `background: ${ color }; box-shadow: 0 4px 14px -2px ${ color }66;` : '' }"
 			></div>
 		{/if}
 	{/if}
