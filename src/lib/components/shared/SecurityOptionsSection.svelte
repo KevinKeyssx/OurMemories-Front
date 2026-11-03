@@ -1,32 +1,38 @@
 <script lang="ts">
-	import { ShieldAlert, Flame, Lock, Clock } from '@lucide/svelte';
+	import { ShieldAlert, Flame } from '@lucide/svelte';
 
     import Accordion    from './Accordion.svelte';
 	import Checkbox     from './inputs/Checkbox.svelte';
-
+	import Password     from './inputs/Password.svelte';
+	import Number       from './inputs/Number.svelte';
 
 	interface Props {
-		password?       : string;
-		timer?          : number;
-		isTemporal?     : boolean;
-		showEphemeral?  : boolean;
-		class?          : string;
+		password      ?: string;
+		timer         ?: number;
+		isTemporal    ?: boolean;
+		showEphemeral ?: boolean;
+		defaultOpen   ?: boolean;
+		class         ?: string;
 	}
 
 	let {
-		password        = $bindable( '' ),
-		timer           = $bindable( undefined ),
-		isTemporal      = $bindable( false ),
-		showEphemeral   = false,
+		password = $bindable( '' ),
+		timer = $bindable( undefined ),
+		isTemporal = $bindable( false ),
+		showEphemeral = false,
+		defaultOpen,
 		class: customClass = ''
 	}: Props = $props();
+
+	const isSecured = $derived<boolean>( defaultOpen !== undefined ? defaultOpen : Boolean( password || timer || isTemporal ) );
 </script>
 
 <div class="pt-2 border-t border-stone-100 dark:border-white/5 { customClass }">
 	<Accordion
 		title="Opciones de Privacidad y Seguridad"
 		icon={ShieldAlert}
-        class="text-blue-500"
+		defaultOpen={isSecured}
+		class="text-blue-500"
 	>
 		<div class="p-4 rounded-2xl bg-stone-50/70 dark:bg-white/2 border border-stone-200/60 dark:border-white/10 space-y-4">
 			{#if showEphemeral}
@@ -41,47 +47,23 @@
 			{/if}
 
 			<!-- Contraseña de Desbloqueo -->
-			<div>
-				<label for="sec-pass" class="block text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-1.5">
-					Contraseña de Desbloqueo
-				</label>
-
-                <div class="relative flex items-center">
-					<div class="absolute left-3 text-stone-400 pointer-events-none">
-						<Lock size={ 14 } />
-					</div>
-
-                    <input
-						id="sec-pass"
-						type="password"
-						bind:value={password}
-						placeholder="Dejar vacío si no requiere contraseña"
-						class="w-full pl-9 pr-3 py-2.5 rounded-2xl bg-stone-100 dark:bg-white/4 border border-stone-200/80 dark:border-white/10 text-xs font-medium focus:outline-hidden focus:border-brand-accent transition-colors"
-					/>
-				</div>
-			</div>
+			<Password
+				bind:value={password}
+				label="Contraseña de Desbloqueo"
+				placeholder="Dejar vacío si no requiere contraseña"
+				id="sec-pass"
+			/>
 
 			<!-- Temporizador -->
-			<div>
-				<label for="sec-timer" class="block text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-1.5">
-					Temporizador de Visualización ( Segundos )
-				</label>
-
-                <div class="relative flex items-center">
-					<div class="absolute left-3 text-stone-400 pointer-events-none">
-						<Clock size={ 14 } />
-					</div>
-
-                    <input
-						id="sec-timer"
-						type="number"
-						min="1"
-						bind:value={timer}
-						placeholder="Ej. 10 para ocultar tras 10 segundos"
-						class="w-full pl-9 pr-3 py-2.5 rounded-2xl bg-stone-100 dark:bg-white/4 border border-stone-200/80 dark:border-white/10 text-xs font-medium focus:outline-hidden focus:border-brand-accent transition-colors"
-					/>
-				</div>
-			</div>
+			<Number
+				bind:value={timer}
+				min={ 1 }
+				step={ 1 }
+				unit="seg"
+				label="Temporizador de Visualización ( Segundos )"
+				placeholder="Ej. 10 para ocultar tras 10 segundos"
+				id="sec-timer"
+			/>
 		</div>
 	</Accordion>
 </div>
