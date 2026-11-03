@@ -39,24 +39,24 @@
 	);
 
 	const currentPathName = $derived<string>(
-		page.params.relation || relationshipsList[0]?.path_name || 'pareja'
+		page.params.relation || ''
 	);
 
 	const currentRelationship = $derived<Relationship | undefined>(
-		relationshipsList.find( ( r: Relationship ) => r.path_name === currentPathName ) || relationshipsList[0]
+		currentPathName ? ( relationshipsList.find( ( r: Relationship ) => r.path_name === currentPathName ) || relationshipsList[ 0 ] ) : undefined
 	);
 
 	function handleAddMoment( partialMoment: Partial<MomentEntity> ): void {
 		memoriesStore.addMoment( {
-			...partialMoment,
-			relationship_id : currentRelationship?.id || 'rel_1'
+			relationship_id : currentRelationship?.id || relationshipsList[ 0 ]?.id || 'rel_1',
+			...partialMoment
 		} );
 	}
 
 	function handleAddMemory( partialMemory: Partial<MemoryEntity> ): void {
 		memoriesStore.addMemory( {
-			...partialMemory,
-			relationship_id : currentRelationship?.id || 'rel_1'
+			relationship_id : currentRelationship?.id || relationshipsList[ 0 ]?.id || 'rel_1',
+			...partialMemory
 		} );
 	}
 
@@ -80,7 +80,7 @@
 	<!-- Banner Lateral Izquierdo de Relaciones (Desktop + Drawer Móvil) -->
 	<RelationshipsSidebar
 		relationships={relationshipsList}
-		activeRelationshipId={currentRelationship?.id || 'rel_1'}
+		activeRelationshipId={currentRelationship?.id || ''}
 		isLoading={relationshipsQuery.isPending}
 		isMobileOpen={isMobileSidebarOpen}
 		onCloseMobile={() => ( isMobileSidebarOpen = false )}
@@ -98,7 +98,7 @@
 		/>
 
 		<!-- Espaciador para evitar solapamiento del header fijo -->
-		<div class="h-[180px] sm:h-[160px]"></div>
+		<div class="h-45 sm:h-40"></div>
 
 		<!-- Contenido de la Página Dinámica -->
 		<main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 md:px-12 pb-24 w-full">
@@ -109,7 +109,7 @@
 
 <UploadModal
 	isOpen={isUploadOpen}
-	relationshipId={currentRelationship?.id || 'rel_1'}
+	relationshipId={currentRelationship?.id}
 	onClose={() => ( isUploadOpen = false )}
 	onCreateMoment={handleAddMoment}
 	onCreateMemory={handleAddMemory}
