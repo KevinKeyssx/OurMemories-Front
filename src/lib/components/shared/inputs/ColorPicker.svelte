@@ -10,13 +10,20 @@
 	}
 
 	const DEFAULT_COLORS: string[] = [
-		'#fdf2f8',
-		'#fef3c7',
-		'#ecfdf5',
-		'#f0fdf4',
-		'#eff6ff',
-		'#faf5ff',
-		'#fff1f2'
+		'#f43f5e',
+		'#ec4899',
+		'#d946ef',
+		'#a855f7',
+		'#8b5cf6',
+		'#6366f1',
+		'#3b82f6',
+		'#0ea5e9',
+		'#06b6d4',
+		'#14b8a6',
+		'#10b981',
+		'#22c55e',
+		'#84cc16',
+		'#eab308'
 	];
 
 	let {
@@ -28,7 +35,7 @@
 	}: Props = $props();
 </script>
 
-<div class="flex items-center gap-3 { customClass }">
+<div class="grid items-center gap-3 { customClass }">
 	{#if label}
 		<span class="text-xs font-bold text-stone-500 dark:text-stone-400 flex items-center gap-1.5 shrink-0">
 			<Palette size={ 14 } />
