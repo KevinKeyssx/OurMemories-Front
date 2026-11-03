@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { fade, scale } from 'svelte/transition';
 	import { X, Sparkles, FolderPlus } from '@lucide/svelte';
-	import type { MemoryEntity, MomentEntity } from '$lib/types';
+	import type { MemoryEntity, MomentEntity, Relationship } from '$lib/types';
 	import { memoriesStore } from '$lib/store.svelte';
 	import Tabs, { type TabItem } from '$lib/components/shared/Tabs.svelte';
+	import Select, { type SelectItem } from '$lib/components/shared/inputs/Select.svelte';
 	import CreateMomentForm from './moments/CreateMomentForm.svelte';
 	import CreateMemoryForm from './memories/CreateMemoryForm.svelte';
 
@@ -12,9 +13,11 @@
 		relationshipId  ?: string;
 		initialTab      ?: 'moment' | 'memory';
 		initialMemoryId ?: string;
+		editingMoment   ?: MomentEntity | null;
 		onClose          : () => void;
 		onCreateMemory  ?: ( data: Partial<MemoryEntity> ) => void;
 		onCreateMoment  ?: ( data: Partial<MomentEntity> ) => void;
+		onUpdateMoment  ?: ( id: string, data: Partial<MomentEntity> ) => void;
 		onAdd           ?: ( data: Partial<MomentEntity> ) => void;
 	}
 
@@ -23,25 +26,53 @@
 		relationshipId,
 		initialTab = 'moment',
 		initialMemoryId = '',
+		editingMoment = null,
 		onClose,
 		onCreateMemory,
 		onCreateMoment,
+		onUpdateMoment,
 		onAdd
 	}: Props = $props();
 
 	let activeTab = $state<string>( 'moment' );
+	let selectedRelId = $state<string>( '' );
 
 	$effect( () => {
-		activeTab = initialTab;
+		if ( editingMoment ) {
+			activeTab = 'moment';
+		} else {
+			activeTab = initialTab;
+		}
 	} );
 
-	const currentRelId = $derived<string>(
-		relationshipId || memoriesStore.groups[ 0 ]?.id || 'rel_1'
+	$effect( () => {
+		selectedRelId = editingMoment?.relationship_id || relationshipId || memoriesStore.groups[ 0 ]?.id || 'rel_1';
+	} );
+
+	const isEditMode = $derived<boolean>( Boolean( editingMoment ) );
+	const isGlobalMode = $derived<boolean>( !relationshipId && !editingMoment );
+
+	const targetRelId = $derived<string>(
+		editingMoment?.relationship_id || relationshipId || selectedRelId || memoriesStore.groups[ 0 ]?.id || 'rel_1'
+	);
+
+	const relationshipSelectItems = $derived<SelectItem[]>(
+		memoriesStore.groups.map( ( g: Relationship ) => ({
+			value       : g.id,
+			label       : g.name,
+			description : `Nivel ${ Math.floor( ( g.points || 0 ) / 100 ) + 1 }`
+		}) )
 	);
 
 	const relationMemories = $derived<MemoryEntity[]>(
-		memoriesStore.memories.filter( ( m: MemoryEntity ) => m.relationship_id === currentRelId )
+		memoriesStore.memories.filter( ( m: MemoryEntity ) => m.relationship_id === targetRelId )
 	);
+
+	const targetRelationship = $derived<Relationship | undefined>(
+		memoriesStore.groups.find( ( g: Relationship ) => g.id === targetRelId )
+	);
+
+	const modalColor = $derived<string | undefined>( targetRelationship?.color );
 
 	const modalTabs: TabItem[] = [
 		{
@@ -57,7 +88,13 @@
 	];
 
 	function handleMomentSubmit( data: Partial<MomentEntity> ): void {
-		if ( onCreateMoment ) {
+		if ( isEditMode && editingMoment ) {
+			if ( onUpdateMoment ) {
+				onUpdateMoment( editingMoment.id, data );
+			} else {
+				memoriesStore.updateMoment( editingMoment.id, data );
+			}
+		} else if ( onCreateMoment ) {
 			onCreateMoment( data );
 		} else if ( onAdd ) {
 			onAdd( data );
@@ -96,8 +133,12 @@
 			<!-- Cabecera del Modal -->
 			<div class="flex items-center justify-between pb-3 border-b border-stone-100 dark:border-white/5">
 				<div>
-					<h3 class="text-lg font-extrabold tracking-tight">Crear Nuevo Registro</h3>
-					<p class="text-xs text-stone-400">Elige qué deseas agregar a esta relación</p>
+					<h3 class="text-lg font-extrabold tracking-tight">
+						{ isEditMode ? 'Editar Momento' : 'Crear Nuevo Registro' }
+					</h3>
+					<p class="text-xs text-stone-400">
+						{ isEditMode ? 'Actualiza los datos y contenido del momento' : 'Elige qué deseas agregar a esta relación' }
+					</p>
 				</div>
 
 				<button
@@ -110,25 +151,43 @@
 				</button>
 			</div>
 
-			<!-- Pestañas Selectoras con Componente Reutilizable y Animación Deslizante -->
-			<Tabs
-				tabs={modalTabs}
-				bind:activeId={activeTab}
-			/>
+			{#if !isEditMode}
+				<!-- Pestañas Selectoras con Componente Reutilizable y Animación Deslizante -->
+				<Tabs
+					tabs={modalTabs}
+					bind:activeId={activeTab}
+					color={modalColor}
+				/>
+			{/if}
+
+			{#if isGlobalMode}
+				<div class="pt-1">
+					<Select
+						items={relationshipSelectItems}
+						bind:value={selectedRelId}
+						label="Relación de Destino"
+						placeholder="Selecciona a qué relación pertenece..."
+						id="upload-modal-rel"
+					/>
+				</div>
+			{/if}
 
 			<!-- Contenido con Transición Suave entre Formularios -->
 			<div class="transition-all duration-200">
 				{#if activeTab === 'moment'}
 					<CreateMomentForm
-						relationshipId={currentRelId}
+						relationshipId={targetRelId}
 						memories={relationMemories}
 						{initialMemoryId}
+						{editingMoment}
+						color={modalColor}
 						onSubmit={handleMomentSubmit}
 						onCancel={onClose}
 					/>
 				{:else}
 					<CreateMemoryForm
-						relationshipId={currentRelId}
+						relationshipId={targetRelId}
+						color={modalColor}
 						onSubmit={handleMemorySubmit}
 						onCancel={onClose}
 					/>
