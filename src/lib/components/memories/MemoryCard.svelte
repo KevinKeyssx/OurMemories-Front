@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { Lock, Images, ArrowUpRight, Clock, ShieldCheck } from '@lucide/svelte';
 	import type { MemoryEntity } from '$lib/types';
-	import { memoriesStore } from '$lib/store.svelte';
 
 	interface Props {
 		memory        : MemoryEntity;
@@ -43,11 +42,11 @@
 			class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 { memory.password && !isUnlockedSession ? 'blur-md brightness-75' : 'brightness-90 dark:brightness-75' }"
 		/>
 	{:else}
-		<div class="absolute inset-0 bg-gradient-to-tr from-brand-accent/30 via-purple-500/20 to-pink-500/30"></div>
+		<div class="absolute inset-0 bg-linear-to-tr from-brand-accent/30 via-purple-500/20 to-pink-500/30"></div>
 	{/if}
 
 	<!-- Gradiente para legibilidad de texto -->
-	<div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/20"></div>
+	<div class="absolute inset-0 bg-linear-to-t from-black/85 via-black/30 to-black/20"></div>
 
 	<!-- Insignias Superiores -->
 	<div class="relative z-10 flex items-center justify-between">
