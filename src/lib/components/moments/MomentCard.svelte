@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
-	import {
+    import type { Component } from 'svelte';
+
+    import {
 		Trash2,
 		Heart,
 		Quote as QuoteIcon,
@@ -10,16 +12,21 @@
 		Lock,
 		Clock,
 		Flame,
-		Eye,
 		Calendar,
 		User as UserIcon,
 		Edit3
 	} from '@lucide/svelte';
-	import type { Component } from 'svelte';
-	import type { MomentEntity, MomentTag } from '$lib/types';
-	import MomentEphemeralCover from './MomentEphemeralCover.svelte';
+	import type {
+        MomentEntity,
+        MomentTag
+    }                               from '$lib/types';
+	import MomentEphemeralCover     from './MomentEphemeralCover.svelte';
+	import Tooltip                  from '$lib/components/shared/Tooltip.svelte';
+	import { formatCaptureDate }    from '$lib/utils/date';
+	import { memoriesStore }        from '$lib/store.svelte';
 
-	interface Props {
+
+    interface Props {
 		moment        : MomentEntity;
 		currentUserId : string;
 		isViewed     ?: boolean;
@@ -29,7 +36,8 @@
 		onRecordView ?: ( momentId: string ) => void;
 	}
 
-	let {
+
+    let {
 		moment,
 		currentUserId,
 		isViewed = false,
@@ -39,13 +47,21 @@
 		onRecordView
 	}: Props = $props();
 
-	let isManuallyUnlocked = $state<boolean>( false );
+	let isManuallyUnlocked  = $state<boolean>( false );
 	let isEphemeralRevealed = $state<boolean>( false );
-	let secondsLeft = $state<number | undefined>( undefined );
-	let timerInterval = $state<ReturnType<typeof setInterval> | null>( null );
+	let secondsLeft         = $state<number | undefined>( undefined );
+	let timerInterval       = $state<ReturnType<typeof setInterval> | null>( null );
 
-	const isUnlocked = $derived<boolean>( !moment.metadata?.password || isManuallyUnlocked );
-	const isCreator = $derived<boolean>( moment.created_by === currentUserId );
+	const isUnlocked        = $derived<boolean>( !moment.metadata?.password || isManuallyUnlocked || memoriesStore.isMomentUnlocked( moment.id ) );
+	const isCreator         = $derived<boolean>( Boolean( moment.created_by && moment.created_by === currentUserId ) );
+	const hasCustomBg       = $derived<boolean>( Boolean( moment.metadata?.bgColor ) );
+	const customBgColor     = $derived<string>( moment.metadata?.bgColor || '#7C3AED' );
+
+	$effect( () => {
+		if ( isUnlocked && moment.metadata?.timer && !timerInterval && secondsLeft === undefined ) {
+			startTimer();
+		}
+	} );
 
 	function startTimer(): void {
 		if ( !moment.metadata?.timer || timerInterval ) {
@@ -63,6 +79,7 @@
 					timerInterval = null;
 				}
 				isManuallyUnlocked = false;
+				memoriesStore.lockMoment( moment.id );
 				secondsLeft = 0;
 			}
 		}, 1000 );
@@ -107,9 +124,27 @@
 </script>
 
 <div
-	class="group relative flex flex-col justify-between rounded-3xl overflow-hidden border border-stone-200/60 dark:border-white/10 bg-white/70 dark:bg-dark-card/70 shadow-lg hover:shadow-2xl transition-all duration-500 backdrop-blur-md"
-	style={ moment.metadata?.bgColor ? `background-color: ${ moment.metadata.bgColor };` : '' }
+	class="group relative flex flex-col justify-between rounded-3xl overflow-hidden transition-all duration-500 backdrop-blur-md shadow-lg hover:shadow-2xl { hasCustomBg ? 'bg-white/75 dark:bg-dark-card/75' : 'bg-white/70 dark:bg-dark-card/70 border border-stone-200/60 dark:border-white/10' }"
+	style={ hasCustomBg ? `border: 1px solid ${ customBgColor }40; box-shadow: 0 10px 30px -10px ${ customBgColor }33;` : '' }
 >
+	{#if hasCustomBg}
+		<!-- Capa translúcida con tinte suave (12% opacidad) -->
+		<div
+			class="absolute inset-0 pointer-events-none transition-colors duration-500"
+			style="background: linear-gradient(135deg, { customBgColor }24 0%, { customBgColor }0d 100%);"
+		></div>
+
+		<!-- Resplandor ambiental suave (Ambient Glow) -->
+		<div
+			class="absolute -top-16 -right-16 w-48 h-48 rounded-full pointer-events-none opacity-30 dark:opacity-40 blur-3xl transition-transform duration-700 group-hover:scale-125"
+			style="background-color: { customBgColor };"
+		></div>
+		<div
+			class="absolute -bottom-16 -left-16 w-40 h-40 rounded-full pointer-events-none opacity-20 dark:opacity-30 blur-3xl transition-transform duration-700"
+			style="background-color: { customBgColor };"
+		></div>
+	{/if}
+
 	<!-- Cubierta efímera para momentos de 'ver una sola vez' -->
 	{#if moment.metadata?.is_temporal && ( isViewed || !isEphemeralRevealed )}
 		<MomentEphemeralCover
@@ -139,7 +174,7 @@
 	{/if}
 
 	<!-- Contenido del Momento -->
-	<div class="p-2">
+	<div class="relative z-10 p-2">
 		<!-- Imagen / Video Multimedia -->
 		{#if moment.metadata?.imageUrl}
 			<div class="aspect-4/5 overflow-hidden rounded-2xl relative shadow-inner mb-3">
@@ -203,46 +238,51 @@
 	</div>
 
 	<!-- Pie de Tarjeta ( Autor, Fecha y Acciones del Creador ) -->
-	<div class="p-3 pt-0 flex items-center justify-between text-[11px] text-stone-400 border-t border-stone-100/60 dark:border-white/5 mt-2">
-		<div class="flex items-center gap-2">
-			<span class="inline-flex items-center gap-1 font-semibold text-stone-500 dark:text-stone-400">
-				<UserIcon size={ 12 } />
-				<span>{ moment.author }</span>
+	<div
+		class="relative z-10 px-3.5 py-2.5 flex items-center justify-between text-[11px] mt-auto border-t transition-colors { hasCustomBg ? 'bg-black/5 dark:bg-black/20 backdrop-blur-md' : 'bg-stone-50/70 dark:bg-white/3 backdrop-blur-md border-stone-200/50 dark:border-white/5' }"
+		style={ hasCustomBg ? `border-color: ${ customBgColor }26;` : '' }
+	>
+		<div class="flex items-center gap-2.5 truncate pr-2">
+			<span class="inline-flex items-center gap-1.5 font-bold text-stone-700 dark:text-stone-200 truncate">
+				<UserIcon size={ 13 } class="text-stone-500 dark:text-stone-400 shrink-0" />
+				<span class="truncate">{ moment.author }</span>
 			</span>
 
 			{#if moment.capture_date}
-				<span class="inline-flex items-center gap-1 text-[10px]">
-					<Calendar size={ 11 } />
-					<span>{ moment.capture_date }</span>
+				<span class="inline-flex items-center gap-1 text-[11px] font-medium text-stone-500 dark:text-stone-400 shrink-0">
+					<Calendar size={ 12 } class="opacity-75" />
+					<span>{ formatCaptureDate( moment.capture_date ) }</span>
 				</span>
 			{/if}
 		</div>
 
 		<!-- Acciones exclusivas del autor creador -->
 		{#if isCreator}
-			<div class="flex items-center gap-1">
+			<div class="flex items-center gap-1.5 shrink-0">
 				{#if onEdit}
-					<button
-						type="button"
-						onclick={() => onEdit && onEdit( moment )}
-						class="p-1 rounded-lg text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-white/5 transition-colors"
-						title="Editar momento"
-						aria-label="Editar momento"
-					>
-						<Edit3 size={ 13 } />
-					</button>
+					<Tooltip text="Editar momento" side="top" sideOffset={ 6 }>
+						<button
+							type="button"
+							onclick={() => onEdit && onEdit( moment )}
+							class="size-7 rounded-xl flex items-center justify-center bg-stone-100/90 dark:bg-white/10 hover:bg-brand-accent/15 text-stone-600 dark:text-stone-300 hover:text-brand-accent dark:hover:text-brand-accent border border-stone-200/70 dark:border-white/10 transition-all active:scale-90 cursor-pointer shadow-2xs"
+							aria-label="Editar momento"
+						>
+							<Edit3 size={ 13 } />
+						</button>
+					</Tooltip>
 				{/if}
 
 				{#if onDelete}
-					<button
-						type="button"
-						onclick={() => onDelete && onDelete( moment.id )}
-						class="p-1 rounded-lg text-stone-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-colors"
-						title="Eliminar momento"
-						aria-label="Eliminar momento"
-					>
-						<Trash2 size={ 13 } />
-					</button>
+					<Tooltip text="Eliminar momento" side="top" sideOffset={ 6 }>
+						<button
+							type="button"
+							onclick={() => onDelete && onDelete( moment.id )}
+							class="size-7 rounded-xl flex items-center justify-center bg-stone-100/90 dark:bg-white/10 hover:bg-rose-500/15 text-stone-600 dark:text-stone-300 hover:text-rose-500 dark:hover:text-rose-400 border border-stone-200/70 dark:border-white/10 transition-all active:scale-90 cursor-pointer shadow-2xs"
+							aria-label="Eliminar momento"
+						>
+							<Trash2 size={ 13 } />
+						</button>
+					</Tooltip>
 				{/if}
 			</div>
 		{/if}
