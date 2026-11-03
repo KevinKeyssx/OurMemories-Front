@@ -10,10 +10,12 @@
 	import SecurityOptionsSection from '$lib/components/shared/SecurityOptionsSection.svelte';
 
 
-    interface Props {
+	interface Props {
 		relationshipId   : string;
 		memories         : MemoryEntity[];
 		initialMemoryId ?: string;
+		editingMoment   ?: MomentEntity | null;
+		color           ?: string;
 		onSubmit         : ( data: Partial<MomentEntity> ) => void;
 		onCancel         : () => void;
 	}
@@ -22,27 +24,41 @@
 		relationshipId,
 		memories,
 		initialMemoryId = '',
+		editingMoment = null,
+		color,
 		onSubmit,
 		onCancel
 	}: Props = $props();
 
 	let selectedMemoryId = $state<string>( '' );
-
-	$effect( () => {
-		selectedMemoryId = initialMemoryId;
-	} );
-
-	let title = $state<string>( '' );
-	let content = $state<string>( '' );
-	let imageUrl = $state<string>( '' );
-	let videoUrl = $state<string>( '' );
-	let bgColor = $state<string>( '' );
-	let captureDate = $state<string>( new Date().toISOString().split( 'T' )[ 0 ] );
+	let title            = $state<string>( '' );
+	let content          = $state<string>( '' );
+	let imageUrl         = $state<string>( '' );
+	let videoUrl         = $state<string>( '' );
+	let bgColor          = $state<string>( '' );
+	let captureDate      = $state<string>( new Date().toISOString().split( 'T' )[ 0 ] );
 
 	// Opciones de seguridad
-	let isTemporal = $state<boolean>( false );
-	let password = $state<string>( '' );
-	let timer = $state<number | undefined>( undefined );
+	let isTemporal       = $state<boolean>( false );
+	let password         = $state<string>( '' );
+	let timer            = $state<number | undefined>( undefined );
+
+	$effect( () => {
+		if ( editingMoment ) {
+			selectedMemoryId = editingMoment.memory_id || '';
+			title            = editingMoment.title || '';
+			content          = editingMoment.content || '';
+			imageUrl         = editingMoment.metadata?.imageUrl || '';
+			videoUrl         = editingMoment.metadata?.videoUrl || '';
+			bgColor          = editingMoment.metadata?.bgColor || '';
+			captureDate      = editingMoment.capture_date || new Date().toISOString().split( 'T' )[ 0 ];
+			password         = editingMoment.metadata?.password || '';
+			timer            = editingMoment.metadata?.timer;
+			isTemporal       = editingMoment.metadata?.is_temporal || false;
+		} else {
+			selectedMemoryId = initialMemoryId;
+		}
+	} );
 
 	// Opciones para el selector de memoria de Bits UI
 	const memorySelectItems = $derived<SelectItem[]>( [
@@ -89,7 +105,7 @@
 			memory_id       : selectedMemoryId ? selectedMemoryId : undefined,
 			title           : title.trim() || undefined,
 			content         : content.trim() || undefined,
-			author          : memoriesStore.currentUser.name || 'Kevin',
+			author          : editingMoment?.author || memoriesStore.currentUser.name || 'Kevin',
 			capture_date    : captureDate || undefined,
 			metadata        : {
 				imageUrl    : imageUrl.trim() || undefined,
@@ -132,6 +148,7 @@
 	<MediaUploader
 		bind:imageUrl={imageUrl}
 		bind:videoUrl={videoUrl}
+		{color}
 		label="Foto o Video del Momento"
 	/>
 
@@ -161,7 +178,7 @@
 	<!-- Selector de Fecha con Bits UI DatePicker -->
 	<DatePicker
 		bind:value={captureDate}
-		label="Fecha del Momento ( capture_date )"
+		label="Fecha del Momento"
 		id="mom-date"
 	/>
 
@@ -195,10 +212,11 @@
 			<button
 				type="submit"
 				disabled={!isValid}
-				class="inline-flex items-center gap-2 px-6 py-2.5 rounded-2xl bg-linear-to-r from-brand-accent to-purple-600 text-white text-xs font-bold shadow-lg shadow-brand-accent/25 hover:shadow-brand-accent/40 active:scale-95 disabled:opacity-50 disabled:pointer-events-none transition-all cursor-pointer"
+				class="inline-flex items-center gap-2 px-6 py-2.5 rounded-2xl text-white text-xs font-bold active:scale-95 disabled:opacity-50 disabled:pointer-events-none transition-all cursor-pointer { color ? '' : 'bg-linear-to-r from-brand-accent to-purple-600 shadow-lg shadow-brand-accent/25 hover:shadow-brand-accent/40' }"
+				style={ color ? `background-color: ${ color }; box-shadow: 0 4px 14px -2px ${ color }66;` : '' }
 			>
 				<Sparkles size={ 16 } />
-				<span>Guardar Momento</span>
+				<span>{ editingMoment ? 'Guardar Cambios' : 'Guardar Momento' }</span>
 			</button>
 		</div>
 	</div>
