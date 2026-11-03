@@ -3,6 +3,7 @@
 	import type { Snippet } from 'svelte';
 	import { browser } from '$app/environment';
 	import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
+	import { Tooltip } from 'bits-ui';
 	import { memoriesStore } from '$lib/store.svelte';
 
 	interface Props {
@@ -20,14 +21,27 @@
 			}
 		}
 	} );
+
+	$effect( () => {
+		if ( typeof document !== 'undefined' ) {
+			const root = document.documentElement;
+			if ( memoriesStore.theme === 'dark' ) {
+				root.classList.add( 'dark' );
+				root.classList.remove( 'light' );
+			} else {
+				root.classList.add( 'light' );
+				root.classList.remove( 'dark' );
+			}
+		}
+	} );
 </script>
 
 <QueryClientProvider client={queryClient}>
-	<div class={memoriesStore.theme}>
+	<Tooltip.Provider>
 		<div class="min-h-screen bg-brand-paper text-brand-ink dark:bg-dark-paper dark:text-dark-ink flex flex-col font-sans antialiased selection:bg-brand-accent selection:text-white transition-colors duration-500">
 			{#if children}
 				{@render children()}
 			{/if}
 		</div>
-	</div>
+	</Tooltip.Provider>
 </QueryClientProvider>
