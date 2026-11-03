@@ -5,12 +5,14 @@
 
 	interface Props {
 		relationshipId : string;
+		color         ?: string;
 		onSubmit       : ( data: Partial<MemoryEntity> ) => void;
 		onCancel       : () => void;
 	}
 
 	let {
 		relationshipId,
+		color,
 		onSubmit,
 		onCancel
 	}: Props = $props();
@@ -108,7 +110,8 @@
 		<button
 			type="submit"
 			disabled={!title.trim()}
-			class="inline-flex items-center gap-2 px-6 py-2.5 rounded-2xl bg-linear-to-r from-brand-accent to-pink-500 text-white text-xs font-bold shadow-lg shadow-brand-accent/25 hover:shadow-brand-accent/40 active:scale-95 disabled:opacity-50 disabled:pointer-events-none transition-all cursor-pointer"
+			class="inline-flex items-center gap-2 px-6 py-2.5 rounded-2xl text-white text-xs font-bold active:scale-95 disabled:opacity-50 disabled:pointer-events-none transition-all cursor-pointer { color ? '' : 'bg-linear-to-r from-brand-accent to-pink-500 shadow-lg shadow-brand-accent/25 hover:shadow-brand-accent/40' }"
+			style={ color ? `background-color: ${ color }; box-shadow: 0 4px 14px -2px ${ color }66;` : '' }
 		>
 			<FolderPlus size={ 16 } />
 			<span>Guardar Memoria</span>
