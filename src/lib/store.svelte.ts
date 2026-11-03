@@ -29,7 +29,8 @@ class MemoriesStore {
 	memories = $state<MemoryEntity[]>( INITIAL_MEMORIES );
 	moments = $state<MomentEntity[]>( INITIAL_MOMENTS );
 	momentViews = $state<MomentUserView[]>( INITIAL_USER_VIEWS );
-	theme = $state<'light' | 'dark'>( 'light' );
+	unlockedMomentIds = $state<string[]>( [] );
+	theme = $state<'light' | 'dark'>( 'dark' );
 	isAuthenticated = $state<boolean>( false );
 
 	constructor() {
@@ -84,7 +85,22 @@ class MemoriesStore {
 
 			if ( savedMoments ) {
 				try {
-					this.moments = JSON.parse( savedMoments );
+					const parsedMoments = JSON.parse( savedMoments );
+					if ( Array.isArray( parsedMoments ) ) {
+						this.moments = parsedMoments.map( ( m: MomentEntity ) => {
+							if ( m.id === '4' && m.metadata && !m.metadata.password ) {
+								return {
+									...m,
+									metadata : {
+										...m.metadata,
+										password   : '1234',
+										is_blocked : true
+									}
+								};
+							}
+							return m;
+						} );
+					}
 				} catch ( e ) {
 					console.error( 'Error parsing saved moments', e );
 				}
@@ -100,6 +116,8 @@ class MemoriesStore {
 
 			if ( savedTheme ) {
 				this.theme = savedTheme;
+			} else {
+				this.theme = 'dark';
 			}
 
 			if ( savedAuth === 'true' ) {
@@ -275,6 +293,20 @@ class MemoriesStore {
 
 	hasUserViewedMoment( momentId: string, userId: string ): boolean {
 		return this.momentViews.some( ( v: MomentUserView ) => v.moment_id === momentId && v.user_id === userId );
+	}
+
+	unlockMoment( id: string ): void {
+		if ( !this.unlockedMomentIds.includes( id ) ) {
+			this.unlockedMomentIds = [ ...this.unlockedMomentIds, id ];
+		}
+	}
+
+	lockMoment( id: string ): void {
+		this.unlockedMomentIds = this.unlockedMomentIds.filter( ( mid: string ) => mid !== id );
+	}
+
+	isMomentUnlocked( id: string ): boolean {
+		return this.unlockedMomentIds.includes( id );
 	}
 }
 
