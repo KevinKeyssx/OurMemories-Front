@@ -1,30 +1,22 @@
 <script lang="ts">
-	import type { Component } from 'svelte';
-	import { fade, fly } from 'svelte/transition';
-	import { Tooltip } from 'bits-ui';
+	import type { Component }   from 'svelte';
+	import { fade, fly }        from 'svelte/transition';
 
 	import {
-		Plus,
-		Grid,
-		Camera,
-		Quote,
-		Video,
-		FileText,
-		Smile,
 		Heart,
-		Users,
-		Users2,
-		Baby,
-		Palmtree,
 		Home,
 		Settings2,
 		X
-	} from '@lucide/svelte';
+	}                   from '@lucide/svelte';
+	import { Tooltip }  from 'bits-ui';
 
-	import type { Relationship } from '$lib/types';
-	import RelationshipCard       from './RelationshipCard.svelte';
 
-	interface Props {
+	import type { Relationship }        from '$lib/types';
+	import RelationshipCard             from './RelationshipCard.svelte';
+	import { RELATIONSHIP_ICON_MAP }    from '$lib/components/shared/inputs/IconPicker.svelte';
+
+
+    interface Props {
 		relationships        : Relationship[];
 		activeRelationshipId : string;
 		isLoading            : boolean;
@@ -42,22 +34,7 @@
 		onOpenGroupEditor
 	}: Props = $props();
 
-	const ICON_MAP: Record<string, Component> = {
-		Plus      : Plus,
-		Grid      : Grid,
-		Camera    : Camera,
-		Quote     : Quote,
-		Video     : Video,
-		FileText  : FileText,
-		Smile     : Smile,
-		Heart     : Heart,
-		Users     : Users,
-		Users2    : Users2,
-		Baby      : Baby,
-		Palmtree  : Palmtree,
-		Home      : Home,
-		Settings2 : Settings2
-	};
+	const ICON_MAP: Record<string, Component> = RELATIONSHIP_ICON_MAP;
 
 	const sortedRelationships = $derived<Relationship[]>(
 		[ ...relationships ].sort( ( a: Relationship, b: Relationship ) => {
@@ -72,6 +49,8 @@
 
 		return avatar.startsWith( 'http://' ) || avatar.startsWith( 'https://' ) || avatar.startsWith( 'data:image' );
 	};
+
+	const isHomeActive = $derived<boolean>( !activeRelationshipId );
 </script>
 
 <!-- Barra Lateral Fija para Escritorio (Desktop Sidebar) -->
@@ -79,7 +58,7 @@
 	<!-- Botón Superior Home / Dashboard Principal -->
 	<a
 		href="/dashboard"
-		class="w-14 h-14 rounded-2xl mb-12 flex items-center justify-center text-white shadow-lg bg-linear-to-tr from-brand-accent to-pink-500 shadow-brand-accent/30 hover:shadow-brand-accent/50 hover:scale-105 active:scale-95 transition-all duration-300 shrink-0"
+		class="w-14 h-14 rounded-2xl mb-12 flex items-center justify-center text-white shadow-lg bg-linear-to-tr from-brand-accent to-pink-500 shadow-brand-accent/30 hover:shadow-brand-accent/50 hover:scale-105 active:scale-95 transition-all duration-300 shrink-0 { isHomeActive ? 'ring-3 ring-brand-accent shadow-brand-accent/50 scale-105' : 'opacity-85 hover:opacity-100' }"
 		title="Ir al Dashboard Principal"
 		aria-label="Ir al Dashboard Principal"
 	>
@@ -144,7 +123,7 @@
 						<a
 							href="/dashboard"
 							onclick={onCloseMobile}
-							class="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-md bg-linear-to-tr from-brand-accent to-pink-500 shadow-brand-accent/25 hover:scale-105 active:scale-95 transition-all shrink-0"
+							class="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-md bg-linear-to-tr from-brand-accent to-pink-500 shadow-brand-accent/25 hover:scale-105 active:scale-95 transition-all shrink-0 { isHomeActive ? 'ring-2 ring-brand-accent' : '' }"
 							title="Ir al Dashboard Principal"
 							aria-label="Ir al Dashboard Principal"
 						>
