@@ -64,9 +64,8 @@
 
 
     function handleUnlockMomentSuccess(): void {
-		if ( unlockMomentTarget?.metadata ) {
-			unlockMomentTarget.metadata.password = undefined;
-			unlockMomentTarget.metadata.is_blocked = false;
+		if ( unlockMomentTarget ) {
+			memoriesStore.unlockMoment( unlockMomentTarget.id );
 		}
 
         isUnlockMomentOpen = false;
