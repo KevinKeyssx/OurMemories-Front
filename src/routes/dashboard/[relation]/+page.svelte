@@ -29,23 +29,9 @@
 	import UploadModal                                       from '$lib/components/UploadModal.svelte';
 	import { memoriesStore }                                 from '$lib/store.svelte';
 	import { useRelationshipsQuery }                         from '$lib/services/relationshipService';
+	import { RELATIONSHIP_ICON_MAP }                         from '$lib/components/shared/inputs/IconPicker.svelte';
 
-	const ICON_MAP: Record<string, Component> = {
-		Plus      : Plus,
-		Grid      : Grid,
-		Camera    : Camera,
-		Quote     : Quote,
-		Video     : Video,
-		FileText  : FileText,
-		Smile     : Smile,
-		Heart     : Heart,
-		Users     : Users,
-		Users2    : Users2,
-		Baby      : Baby,
-		Palmtree  : Palmtree,
-		Home      : Home,
-		Settings2 : Settings2
-	};
+	const ICON_MAP: Record<string, Component> = RELATIONSHIP_ICON_MAP;
 
 	function isImageAvatar( avatar: string | undefined ): boolean {
 		if ( !avatar ) {
@@ -111,10 +97,7 @@
 				window.location.href = `/dashboard/${ pathName }/memory/${ unlockTarget.item.id }`;
 			} else {
 				const moment = unlockTarget.item as MomentEntity;
-				if ( moment.metadata ) {
-					moment.metadata.password = undefined;
-					moment.metadata.is_blocked = false;
-				}
+				memoriesStore.unlockMoment( moment.id );
 			}
 		}
 		isUnlockOpen = false;
@@ -186,7 +169,7 @@
 			<!-- Contador de Memorias y Momentos -->
 			<div class="flex items-center gap-3">
 				<div class="flex items-center gap-2.5 bg-stone-100/70 dark:bg-white/3 border border-stone-200/60 dark:border-white/5 px-3.5 py-2.5 rounded-2xl shrink-0">
-					<FolderHeart size={ 17 } class="text-purple-500" />
+					<FolderHeart size={ 17 } style="color: { currentRelationship?.color || '#f43f5e' };" />
 					<div class="text-xs">
 						<span class="text-stone-400">Memorias: </span>
 						<span class="font-extrabold text-brand-ink dark:text-white">{ relationshipMemories.length }</span>
@@ -233,6 +216,7 @@
 		memories={relationshipMemories}
 		relationPath={pathName}
 		moments={relationshipMoments}
+		color={currentRelationship?.color || '#f43f5e'}
 		onOpenCreate={() => ( isCreateMemoryOpen = true )}
 		onUnlockMemory={handleUnlockMemory}
 	/>
@@ -243,7 +227,10 @@
 	<!-- Sección 2: Galería de Momentos (Filtros por Tags y Buscador) -->
 	<div class="space-y-4">
 		<div class="flex items-center gap-2">
-			<div class="w-8 h-8 rounded-xl bg-brand-accent/10 text-brand-accent flex items-center justify-center">
+			<div
+				class="w-8 h-8 rounded-xl flex items-center justify-center transition-colors"
+				style="background-color: { currentRelationship?.color || '#f43f5e' }18; color: { currentRelationship?.color || '#f43f5e' };"
+			>
 				<Sparkles size={ 18 } />
 			</div>
 			<div>
@@ -256,6 +243,7 @@
 			moments={relationshipMoments}
 			currentUserId={memoriesStore.currentUser.id}
 			relationName={currentRelationship?.name || 'esta relación'}
+			color={currentRelationship?.color || '#f43f5e'}
 			onDelete={handleDeleteMoment}
 			onUnlock={handleUnlockMoment}
 			onRecordView={handleRecordView}
