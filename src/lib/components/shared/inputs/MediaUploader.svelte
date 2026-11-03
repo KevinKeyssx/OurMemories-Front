@@ -19,11 +19,15 @@
 		url  : string;
 	}
 
+	export type MediaAcceptType = 'all' | 'image' | 'video';
+
 	interface Props {
 		imageUrl      ?: string;
 		videoUrl      ?: string;
 		maxSizeMB     ?: number;
+		accept        ?: MediaAcceptType;
 		label         ?: string;
+		color         ?: string;
 		class         ?: string;
 		onMediaChange ?: ( data: MediaChangeEvent ) => void;
 	}
@@ -32,7 +36,9 @@
 		imageUrl = $bindable( '' ),
 		videoUrl = $bindable( '' ),
 		maxSizeMB = 15,
+		accept = 'all',
 		label = 'Foto o Video del Momento',
+		color,
 		class: customClass = '',
 		onMediaChange
 	}: Props = $props();
@@ -64,6 +70,13 @@
 
 
     function detectUrlType( url: string ): 'image' | 'video' {
+		if ( accept === 'image' ) {
+			return 'image';
+		}
+		if ( accept === 'video' ) {
+			return 'video';
+		}
+
 		const cleanUrl = url.trim().toLowerCase();
 		const videoExtensions: string[] = [ '.mp4', '.webm', '.ogg', '.mov', '.m4v' ];
 		const isVideoExt = videoExtensions.some( ( ext: string ) => cleanUrl.includes( ext ) );
@@ -86,6 +99,16 @@
 
 		const isVideo = file.type.startsWith( 'video/' );
 		const isImage = file.type.startsWith( 'image/' );
+
+		if ( accept === 'image' && !isImage ) {
+			errorMsg = 'Formato no soportado. Selecciona un archivo de imagen (JPG, PNG, WEBP, GIF).';
+			return;
+		}
+
+		if ( accept === 'video' && !isVideo ) {
+			errorMsg = 'Formato no soportado. Selecciona un archivo de video (MP4, WEBM).';
+			return;
+		}
 
 		if ( !isVideo && !isImage ) {
 			errorMsg = 'Formato no soportado. Selecciona una imagen o un video.';
@@ -208,6 +231,7 @@
 				tabs={uploadTabs}
 				bind:activeId={activeMode}
 				size="small"
+				{color}
 			/>
 		{/if}
 	</div>
@@ -248,7 +272,8 @@
 							<span>Foto</span>
 						{/if}
 					</span>
-					<span class="text-xs font-medium text-stone-200 truncate">
+
+                    <span class="text-xs font-medium text-stone-200 truncate">
 						{ fileName || 'Multimedia seleccionada' }
 					</span>
 				</div>
@@ -284,21 +309,37 @@
 			>
 				<input
 					type="file"
-					accept="image/*,video/*"
+					accept={ accept === 'image' ? 'image/*' : accept === 'video' ? 'video/*' : 'image/*,video/*' }
 					bind:this={fileInputRef}
 					onchange={handleFileInput}
 					class="hidden"
 				/>
 
-				<div class="size-10 rounded-xl bg-brand-accent/10 text-brand-accent flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+				<div
+					class="size-10 rounded-xl flex items-center justify-center mb-2 group-hover:scale-110 transition-transform { color ? '' : 'bg-brand-accent/10 text-brand-accent' }"
+					style={ color ? `background-color: ${ color }1a; color: ${ color };` : '' }
+				>
 					<CloudUpload size={ 20 } />
 				</div>
 
 				<p class="text-xs font-semibold text-stone-700 dark:text-stone-200">
-					Arrastra una foto o video aquí, o <span class="text-brand-accent underline">explora tus archivos</span>
+					{#if accept === 'image'}
+						Arrastra una imagen aquí, o <span class="underline { color ? '' : 'text-brand-accent' }" style={ color ? `color: ${ color };` : '' }>explora tus archivos</span>
+					{:else if accept === 'video'}
+						Arrastra un video aquí, o <span class="underline { color ? '' : 'text-brand-accent' }" style={ color ? `color: ${ color };` : '' }>explora tus archivos</span>
+					{:else}
+						Arrastra una foto o video aquí, o <span class="underline { color ? '' : 'text-brand-accent' }" style={ color ? `color: ${ color };` : '' }>explora tus archivos</span>
+					{/if}
 				</p>
+
 				<p class="text-[10px] text-stone-400 mt-1">
-					Detección automática de imagen o video (Máx. { maxSizeMB }MB)
+					{#if accept === 'image'}
+						Formatos de imagen soportados: JPG, PNG, WEBP, GIF (Máx. { maxSizeMB }MB)
+					{:else if accept === 'video'}
+						Formatos de video soportados: MP4, WEBM (Máx. { maxSizeMB }MB)
+					{:else}
+						Detección automática de imagen o video (Máx. { maxSizeMB }MB)
+					{/if}
 				</p>
 			</div>
 		{:else}
@@ -308,10 +349,11 @@
 					<div class="absolute left-3.5 text-stone-400 pointer-events-none">
 						<LinkIcon size={ 14 } />
 					</div>
+
 					<input
 						type="url"
 						bind:value={urlInput}
-						placeholder="https://ejemplo.com/archivo.jpg o .mp4"
+						placeholder={ accept === 'image' ? 'https://ejemplo.com/imagen.jpg' : accept === 'video' ? 'https://ejemplo.com/video.mp4' : 'https://ejemplo.com/archivo.jpg o .mp4' }
 						onkeydown={( e: KeyboardEvent ) => {
 							if ( e.key === 'Enter' ) {
 								e.preventDefault();
@@ -320,6 +362,7 @@
 						}}
 						class="w-full pl-10 pr-20 py-2.5 rounded-2xl bg-stone-100 dark:bg-white/4 border border-stone-200/80 dark:border-white/10 text-xs font-medium focus:outline-hidden hover:border-brand-accent/50 focus:border-brand-accent transition-colors"
 					/>
+
 					<button
 						type="button"
 						onclick={handleUrlSubmit}
@@ -329,8 +372,15 @@
 						Cargar
 					</button>
 				</div>
+
 				<p class="text-[10px] text-stone-400 pl-1">
-					Detectaremos automáticamente si se trata de una imagen o un video.
+					{#if accept === 'image'}
+						Detectaremos y cargaremos la imagen automáticamente.
+					{:else if accept === 'video'}
+						Detectaremos y cargaremos el video automáticamente.
+					{:else}
+						Detectaremos automáticamente si se trata de una imagen o un video.
+					{/if}
 				</p>
 			</div>
 		{/if}
