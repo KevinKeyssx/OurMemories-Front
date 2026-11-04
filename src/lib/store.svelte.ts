@@ -1,4 +1,4 @@
-import type { Relationship, MomentEntity, MemoryEntity, MomentUserView, MomentTag, User } from './types';
+import type { Relationship, MomentEntity, MemoryEntity, MomentUserView, MomentTag, User, UserRole } from './types';
 import { INITIAL_RELATIONSHIPS, INITIAL_MEMORIES, INITIAL_MOMENTS, INITIAL_USER_VIEWS, CURRENT_USER } from './data';
 
 function computeMomentTags( data: Partial<MomentEntity> ): MomentTag[] {
@@ -45,7 +45,12 @@ class MemoriesStore {
 
 			if ( savedUser ) {
 				try {
-					this.currentUser = JSON.parse( savedUser );
+					const parsedUser = JSON.parse( savedUser );
+					this.currentUser = {
+						...CURRENT_USER,
+						...parsedUser,
+						role : ( parsedUser.role as UserRole ) || 'super_admin'
+					};
 				} catch ( e ) {
 					console.error( 'Error parsing saved user', e );
 				}
@@ -236,14 +241,53 @@ class MemoriesStore {
 		return newMoment;
 	}
 
+	canEditMoment( moment: MomentEntity ): boolean {
+		if ( this.currentUser.role === 'super_admin' || this.currentUser.role === 'admin' ) {
+			return true;
+		}
+		return Boolean( moment.created_by && moment.created_by === this.currentUser.id );
+	}
+
+	canDeleteMoment( moment: MomentEntity ): boolean {
+		if ( this.currentUser.role === 'super_admin' || this.currentUser.role === 'admin' ) {
+			return true;
+		}
+		return Boolean( moment.created_by && moment.created_by === this.currentUser.id );
+	}
+
+	canManageRelationship(): boolean {
+		return this.currentUser.role === 'super_admin' || this.currentUser.role === 'admin';
+	}
+
+	setUserRole( role: UserRole ): void {
+		this.currentUser = {
+			...this.currentUser,
+			role,
+			updated_at : new Date().toISOString()
+		};
+		this.persist();
+	}
+
+	clearMomentViews( momentId: string ): void {
+		this.momentViews = this.momentViews.filter( ( v: MomentUserView ) => v.moment_id !== momentId );
+		this.persist();
+	}
+
+	resetMomentViewForUser( momentId: string, userId: string ): void {
+		this.momentViews = this.momentViews.filter(
+			( v: MomentUserView ) => !( v.moment_id === momentId && v.user_id === userId )
+		);
+		this.persist();
+	}
+
 	updateMoment( id: string, updated: Partial<MomentEntity> ): boolean {
 		const target = this.moments.find( ( m: MomentEntity ) => m.id === id );
 		if ( !target ) {
 			return false;
 		}
 
-		if ( target.created_by && target.created_by !== this.currentUser.id ) {
-			console.warn( 'No tienes permisos para editar este momento porque no eres el creador.' );
+		if ( !this.canEditMoment( target ) ) {
+			console.warn( 'No tienes permisos para editar este momento.' );
 			return false;
 		}
 
@@ -261,18 +305,29 @@ class MemoriesStore {
 			}
 			return m;
 		} );
+
+		// Si el momento es efímero (o se actualizó), se resetean las vistas para que los demás miembros puedan volver a verlo
+		if ( target.metadata?.is_temporal || updated.metadata?.is_temporal ) {
+			this.clearMomentViews( id );
+		}
+
 		this.persist();
 		return true;
 	}
 
 	deleteMoment( id: string ): boolean {
 		const target = this.moments.find( ( m: MomentEntity ) => m.id === id );
-		if ( target && target.created_by && target.created_by !== this.currentUser.id ) {
+		if ( !target ) {
+			return false;
+		}
+
+		if ( !this.canDeleteMoment( target ) ) {
 			console.warn( 'No tienes permisos para eliminar este momento.' );
 			return false;
 		}
 
 		this.moments = this.moments.filter( ( m: MomentEntity ) => m.id !== id );
+		this.clearMomentViews( id );
 		this.persist();
 		return true;
 	}
