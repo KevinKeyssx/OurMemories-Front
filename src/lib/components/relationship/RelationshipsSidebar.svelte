@@ -14,6 +14,7 @@
 	import type { Relationship }        from '$lib/types';
 	import RelationshipCard             from './RelationshipCard.svelte';
 	import { RELATIONSHIP_ICON_MAP }    from '$lib/components/shared/inputs/IconPicker.svelte';
+	import { memoriesStore }            from '$lib/store.svelte';
 
 
     interface Props {
@@ -88,18 +89,20 @@
 
 	<div class="w-8 h-px bg-stone-200/50 dark:border-white/5 my-4 shrink-0"></div>
 
-	<!-- Botón de Configuración -->
-	<div class="flex flex-col items-center shrink-0">
-		<button
-			type="button"
-			onclick={onOpenGroupEditor}
-			class="w-12 h-12 flex items-center justify-center text-stone-500 dark:text-stone-400 hover:text-brand-secondary dark:hover:text-brand-secondary transition-all hover:scale-110 rounded-xl hover:bg-stone-100 dark:hover:bg-white/5 active:scale-95"
-			title="Configurar relaciones"
-			aria-label="Configurar relaciones"
-		>
-			<Settings2 size={ 20 } />
-		</button>
-	</div>
+	<!-- Botón de Configuración (Solo administradores) -->
+	{#if memoriesStore.canManageRelationship()}
+		<div class="flex flex-col items-center shrink-0">
+			<button
+				type="button"
+				onclick={onOpenGroupEditor}
+				class="w-12 h-12 flex items-center justify-center text-stone-500 dark:text-stone-400 hover:text-brand-secondary dark:hover:text-brand-secondary transition-all hover:scale-110 rounded-xl hover:bg-stone-100 dark:hover:bg-white/5 active:scale-95 cursor-pointer"
+				title="Configurar relaciones"
+				aria-label="Configurar relaciones"
+			>
+				<Settings2 size={ 20 } />
+			</button>
+		</div>
+	{/if}
 </aside>
 
 <!-- Menú Desplegable (Drawer) para Dispositivos Móviles -->
@@ -193,21 +196,23 @@
 					{/if}
 				</nav>
 
-				<div class="pt-4 border-t border-stone-100 dark:border-white/5 flex items-center justify-end shrink-0">
-					<button
-						type="button"
-						onclick={() => {
-							onCloseMobile();
-							onOpenGroupEditor();
-						}}
-						class="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-stone-500 hover:text-brand-accent rounded-xl hover:bg-stone-100 dark:hover:bg-white/5 transition-colors"
-						title="Editar relaciones"
-						aria-label="Editar relaciones"
-					>
-						<Settings2 size={ 16 } />
-						<span>Editar Relaciones</span>
-					</button>
-				</div>
+				{#if memoriesStore.canManageRelationship()}
+					<div class="pt-4 border-t border-stone-100 dark:border-white/5 flex items-center justify-end shrink-0">
+						<button
+							type="button"
+							onclick={() => {
+								onCloseMobile();
+								onOpenGroupEditor();
+							}}
+							class="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-stone-500 hover:text-brand-accent rounded-xl hover:bg-stone-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
+							title="Editar relaciones"
+							aria-label="Editar relaciones"
+						>
+							<Settings2 size={ 16 } />
+							<span>Editar Relaciones</span>
+						</button>
+					</div>
+				{/if}
 			</div>
 		</div>
 	</div>
