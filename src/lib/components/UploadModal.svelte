@@ -1,12 +1,18 @@
 <script lang="ts">
 	import { fade, scale } from 'svelte/transition';
-	import { X, Sparkles, FolderPlus } from '@lucide/svelte';
-	import type { MemoryEntity, MomentEntity, Relationship } from '$lib/types';
-	import { memoriesStore } from '$lib/store.svelte';
-	import Tabs, { type TabItem } from '$lib/components/shared/Tabs.svelte';
-	import Select, { type SelectItem } from '$lib/components/shared/inputs/Select.svelte';
-	import CreateMomentForm from './moments/CreateMomentForm.svelte';
-	import CreateMemoryForm from './memories/CreateMemoryForm.svelte';
+
+    import { X, Sparkles, FolderPlus } from '@lucide/svelte';
+
+    import type {
+        MemoryEntity,
+        MomentEntity,
+        Relationship
+    }                                   from '$lib/types';
+	import { memoriesStore }            from '$lib/store.svelte';
+	import Tabs, { type TabItem }       from '$lib/components/shared/Tabs.svelte';
+	import Select, { type SelectItem }  from '$lib/components/shared/inputs/Select.svelte';
+	import CreateMomentForm             from './moments/CreateMomentForm.svelte';
+	import CreateMemoryForm             from './memories/CreateMemoryForm.svelte';
 
 	interface Props {
 		isOpen           : boolean;
