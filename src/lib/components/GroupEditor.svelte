@@ -1,15 +1,21 @@
 <script lang="ts">
-	import { scale, fade } from 'svelte/transition';
-	import { X, Check, Trash2, Plus } from '@lucide/svelte';
-	import type { Relationship, RelationshipType } from '$lib/types';
-	import Select, { type SelectItem } from '$lib/components/shared/inputs/Select.svelte';
-	import Input from '$lib/components/shared/inputs/Input.svelte';
-	import Tabs, { type TabItem } from '$lib/components/shared/Tabs.svelte';
-	import IconPicker from '$lib/components/shared/inputs/IconPicker.svelte';
-	import MediaUploader from '$lib/components/shared/inputs/MediaUploader.svelte';
-	import ColorPicker from '$lib/components/shared/inputs/ColorPicker.svelte';
+    import { scale, fade } from 'svelte/transition';
 
-	interface Props {
+    import { X, Check, Trash2, Plus } from '@lucide/svelte';
+
+    import type {
+        Relationship,
+        RelationshipType
+    }                                   from '$lib/types';
+	import Select, { type SelectItem }  from '$lib/components/shared/inputs/Select.svelte';
+	import Input                        from '$lib/components/shared/inputs/Input.svelte';
+	import Tabs, { type TabItem }       from '$lib/components/shared/Tabs.svelte';
+	import IconPicker                   from '$lib/components/shared/inputs/IconPicker.svelte';
+	import MediaUploader                from '$lib/components/shared/inputs/MediaUploader.svelte';
+	import ColorPicker                  from '$lib/components/shared/inputs/ColorPicker.svelte';
+
+
+    interface Props {
 		isOpen            : boolean;
 		relationships     : Relationship[];
 		relationshipTypes : RelationshipType[];
@@ -19,7 +25,8 @@
 		onDelete          : ( id: string ) => void;
 	}
 
-	let {
+
+    let {
 		isOpen = true,
 		relationships,
 		relationshipTypes,
