@@ -89,10 +89,14 @@
 		}
 	} );
 
-	// Validación: Al menos imagen, video o texto
-	const isValid = $derived<boolean>(
+	// Validación: Al menos imagen, video o texto, y si es efímero, requiere temporizador válido
+	const hasContent = $derived<boolean>(
 		Boolean( imageUrl.trim() || videoUrl.trim() || content.trim() )
 	);
+	const isTimerValid = $derived<boolean>(
+		!isTemporal || Boolean( timer && timer >= 5 && timer <= 180 )
+	);
+	const isValid = $derived<boolean>( hasContent && isTimerValid );
 
 	function handleFormSubmit( e: SubmitEvent ): void {
 		e.preventDefault();
@@ -194,7 +198,11 @@
 	<div class="flex items-center justify-between pt-3 border-t border-stone-100 dark:border-white/5">
 		{#if !isValid}
 			<p class="text-[11px] font-semibold text-amber-500">
-				* Añade una foto, video o texto para guardar el momento.
+				{#if !hasContent}
+					* Añade una foto, video o texto para guardar el momento.
+				{:else if !isTimerValid}
+					* El momento efímero requiere un temporizador entre 5s y 180s.
+				{/if}
 			</p>
 		{:else}
 			<div></div>
