@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { ShieldAlert, Flame } from '@lucide/svelte';
 
-    import Accordion    from './Accordion.svelte';
-	import Checkbox     from './inputs/Checkbox.svelte';
-	import Password     from './inputs/Password.svelte';
-	import Number       from './inputs/Number.svelte';
+	import Accordion from './Accordion.svelte';
+	import Checkbox  from './inputs/Checkbox.svelte';
+	import Password  from './inputs/Password.svelte';
+	import Number    from './inputs/Number.svelte';
 
 	interface Props {
 		password      ?: string;
@@ -25,6 +25,16 @@
 	}: Props = $props();
 
 	const isSecured = $derived<boolean>( defaultOpen !== undefined ? defaultOpen : Boolean( password || timer || isTemporal ) );
+
+	$effect( () => {
+		if ( isTemporal ) {
+			if ( timer === undefined || timer < 5 ) {
+				timer = 5;
+			} else if ( timer > 180 ) {
+				timer = 180;
+			}
+		}
+	} );
 </script>
 
 <div class="pt-2 border-t border-stone-100 dark:border-white/5 { customClass }">
@@ -57,11 +67,14 @@
 			<!-- Temporizador -->
 			<Number
 				bind:value={timer}
-				min={ 1 }
-				step={ 1 }
+				min={ isTemporal ? 5 : 1 }
+				max={ isTemporal ? 180 : undefined }
+				step={ isTemporal ? 5 : 1 }
 				unit="seg"
-				label="Temporizador de Visualización ( Segundos )"
-				placeholder="Ej. 10 para ocultar tras 10 segundos"
+				required={isTemporal}
+				label={ isTemporal ? 'Temporizador Requerido ( Segundos )' : 'Temporizador de Visualización ( Segundos )' }
+				placeholder={ isTemporal ? 'Mínimo 5s, máximo 180s' : 'Ej. 10 para ocultar tras 10 segundos' }
+				helperText={ isTemporal ? 'Tiempo visible antes de consumirse ( entre 5s y 180s en saltos de 5s )' : undefined }
 				id="sec-timer"
 			/>
 		</div>
