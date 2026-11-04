@@ -52,7 +52,8 @@ export const CURRENT_USER: User = {
 	points     : 450,
 	birthdate  : '1998-05-15',
 	is_active  : true,
-	sex_id     : '1'
+	sex_id     : '1',
+	role       : 'super_admin'
 };
 
 export const INITIAL_RELATIONSHIPS: Relationship[] = [
