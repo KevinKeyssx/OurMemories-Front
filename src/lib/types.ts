@@ -15,6 +15,8 @@ export interface RelationshipType {
 	description : string;
 }
 
+export type UserRole = 'user' | 'admin' | 'super_admin';
+
 export interface User {
 	id         : string;
 	name       : string;
@@ -27,6 +29,7 @@ export interface User {
 	birthdate  : string;
 	is_active  : boolean;
 	sex_id     : string;
+	role       : UserRole;
 }
 
 export interface Relationship {
