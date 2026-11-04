@@ -125,6 +125,9 @@
 							<span class="text-[10px] font-extrabold px-1.5 py-0.5 rounded-md bg-brand-accent/10 text-brand-accent dark:text-dark-accent">
 								Nivel {userLevel}
 							</span>
+							<span class="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-md { currentUser.role === 'super_admin' ? 'bg-purple-500/15 text-purple-500' : currentUser.role === 'admin' ? 'bg-blue-500/15 text-blue-500' : 'bg-stone-500/15 text-stone-400' }">
+								{ currentUser.role }
+							</span>
 							<span class="text-[10px] font-semibold text-stone-400">
 								{userPoints} pts
 							</span>
@@ -141,14 +144,42 @@
 					<div
 						transition:scale={{ start: 0.95, duration: 150 }}
 						onclick={( e ) => e.stopPropagation()}
-						class="absolute right-0 top-14 w-60 bg-white dark:bg-dark-card border border-stone-200/70 dark:border-white/10 rounded-2xl shadow-2xl p-2 z-50 overflow-hidden"
+						class="absolute right-0 top-14 w-64 bg-white dark:bg-dark-card border border-stone-200/70 dark:border-white/10 rounded-2xl shadow-2xl p-2 z-50 overflow-hidden"
 					>
 						<div class="px-3 py-2.5 border-b border-stone-100 dark:border-white/5 mb-1">
 							<p class="text-xs font-bold text-stone-800 dark:text-stone-100">{currentUser.name} {currentUser.last_name}</p>
 							<p class="text-[11px] text-stone-400 truncate">{currentUser.email}</p>
-							<div class="mt-2 flex items-center gap-2">
+							<div class="mt-2 flex items-center justify-between text-xs">
 								<span class="text-[10px] font-bold uppercase tracking-wider text-stone-400">Puntos Totales:</span>
-								<span class="text-xs font-extrabold text-brand-accent">{userPoints} pts</span>
+								<span class="font-extrabold text-brand-accent">{userPoints} pts</span>
+							</div>
+						</div>
+
+						<!-- Selector de Rol Interactivo (para pruebas en caliente) -->
+						<div class="px-3 py-2 border-b border-stone-100 dark:border-white/5 my-1">
+							<span class="text-[10px] font-bold uppercase tracking-wider text-stone-400 block mb-1.5">Rol de Usuario:</span>
+							<div class="grid grid-cols-3 gap-1 bg-stone-100 dark:bg-white/5 p-1 rounded-xl">
+								<button
+									type="button"
+									onclick={() => memoriesStore.setUserRole( 'user' )}
+									class="py-1 text-[10px] font-bold rounded-lg transition-all cursor-pointer { currentUser.role === 'user' ? 'bg-white dark:bg-dark-card text-brand-accent shadow-xs' : 'text-stone-500 hover:text-stone-800 dark:hover:text-stone-200' }"
+								>
+									User
+								</button>
+								<button
+									type="button"
+									onclick={() => memoriesStore.setUserRole( 'admin' )}
+									class="py-1 text-[10px] font-bold rounded-lg transition-all cursor-pointer { currentUser.role === 'admin' ? 'bg-white dark:bg-dark-card text-blue-500 shadow-xs' : 'text-stone-500 hover:text-stone-800 dark:hover:text-stone-200' }"
+								>
+									Admin
+								</button>
+								<button
+									type="button"
+									onclick={() => memoriesStore.setUserRole( 'super_admin' )}
+									class="py-1 text-[10px] font-bold rounded-lg transition-all cursor-pointer { currentUser.role === 'super_admin' ? 'bg-white dark:bg-dark-card text-purple-500 shadow-xs' : 'text-stone-500 hover:text-stone-800 dark:hover:text-stone-200' }"
+								>
+									Super
+								</button>
 							</div>
 						</div>
 
