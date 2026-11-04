@@ -49,13 +49,15 @@
 			return;
 		}
 
-		const current = value ?? ( min !== undefined ? min : 0 );
-		const next = current + step;
-
-		if ( max !== undefined && next > max ) {
-			value = max;
+		if ( value === undefined ) {
+			value = min !== undefined ? min : step;
 		} else {
-			value = next;
+			const next = value + step;
+			if ( max !== undefined && next > max ) {
+				value = max;
+			} else {
+				value = next;
+			}
 		}
 
 		oninput?.( value );
@@ -67,13 +69,15 @@
 			return;
 		}
 
-		const current = value ?? ( min !== undefined ? min : 0 );
-		const next = current - step;
-
-		if ( min !== undefined && next < min ) {
-			value = min;
+		if ( value === undefined ) {
+			value = min !== undefined ? min : 0;
 		} else {
-			value = next;
+			const next = value - step;
+			if ( min !== undefined && next < min ) {
+				value = min;
+			} else {
+				value = next;
+			}
 		}
 
 		oninput?.( value );
