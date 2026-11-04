@@ -12,13 +12,17 @@
 		Compass
 	} from '@lucide/svelte';
 
-    import type { MomentEntity, MomentTag } from '$lib/types';
-	import { memoriesStore } from '$lib/store.svelte';
-	import MomentCard from './MomentCard.svelte';
-	import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte';
-	import UploadModal from '$lib/components/UploadModal.svelte';
+    import type {
+        MomentEntity,
+        MomentTag
+    }                           from '$lib/types';
+	import { memoriesStore }    from '$lib/store.svelte';
+	import MomentCard           from './MomentCard.svelte';
+	import ConfirmDialog        from '$lib/components/shared/ConfirmDialog.svelte';
+	import UploadModal          from '$lib/components/UploadModal.svelte';
 
-	interface Props {
+
+    interface Props {
 		moments        : MomentEntity[];
 		currentUserId  : string;
 		relationName  ?: string;
@@ -29,7 +33,8 @@
 		onRecordView  ?: ( momentId: string ) => void;
 	}
 
-	let {
+
+    let {
 		moments,
 		currentUserId,
 		relationName = 'Relación',
@@ -40,12 +45,12 @@
 		onRecordView
 	}: Props = $props();
 
-	let searchQuery = $state<string>( '' );
-	let selectedScope = $state<'all' | 'standalone'>( 'all' );
-	let selectedTag = $state<MomentTag | 'all'>( 'all' );
 
-	let editingMoment = $state<MomentEntity | null>( null );
-	let momentIdToDelete = $state<string | null>( null );
+    let searchQuery         = $state<string>( '' );
+	let selectedScope       = $state<'all' | 'standalone'>( 'all' );
+	let selectedTag         = $state<MomentTag | 'all'>( 'all' );
+	let editingMoment       = $state<MomentEntity | null>( null );
+	let momentIdToDelete    = $state<string | null>( null );
 	let isConfirmDeleteOpen = $state<boolean>( false );
 
 	function handleRequestEdit( moment: MomentEntity ): void {
@@ -113,7 +118,26 @@
 			return true;
 		} );
 	} );
+
+	let innerWidth = $state<number>( typeof window !== 'undefined' ? window.innerWidth : 1200 );
+
+	const columnCount = $derived<number>(
+		innerWidth < 768 ? 1 : innerWidth < 1024 ? 2 : 3
+	);
+
+	const columns = $derived.by<MomentEntity[][]>( () => {
+		const count = columnCount;
+		const buckets: MomentEntity[][] = Array.from( { length: count }, () => [] );
+
+		filteredMoments.forEach( ( moment: MomentEntity, index: number ) => {
+			buckets[ index % count ].push( moment );
+		} );
+
+		return buckets;
+	} );
 </script>
+
+<svelte:window bind:innerWidth />
 
 <div class="space-y-6">
 	<!-- Barra de Búsqueda y Filtros de Momentos -->
@@ -196,17 +220,21 @@
 			</p>
 		</div>
 	{:else}
-		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-			{#each filteredMoments as moment (moment.id)}
-				<MomentCard
-					{moment}
-					{currentUserId}
-					isViewed={memoriesStore.hasUserViewedMoment( moment.id, currentUserId )}
-					onEdit={handleRequestEdit}
-					onDelete={handleRequestDelete}
-					{onUnlock}
-					{onRecordView}
-				/>
+		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
+			{#each columns as columnBucket }
+				<div class="flex flex-col gap-6 min-w-0">
+					{#each columnBucket as moment (moment.id)}
+						<MomentCard
+							{moment}
+							{currentUserId}
+							isViewed={memoriesStore.hasUserViewedMoment( moment.id, currentUserId )}
+							onEdit={handleRequestEdit}
+							onDelete={handleRequestDelete}
+							{onUnlock}
+							{onRecordView}
+						/>
+					{/each}
+				</div>
 			{/each}
 		</div>
 	{/if}
