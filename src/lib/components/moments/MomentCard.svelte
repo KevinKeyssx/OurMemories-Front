@@ -14,13 +14,16 @@
 		Flame,
 		Calendar,
 		User as UserIcon,
-		Edit3
+		Edit3,
+		RotateCcw,
+		EyeOff
 	} from '@lucide/svelte';
 	import type {
         MomentEntity,
         MomentTag
     }                               from '$lib/types';
 	import MomentEphemeralCover     from './MomentEphemeralCover.svelte';
+	import SecureEphemeralMedia     from './SecureEphemeralMedia.svelte';
 	import Tooltip                  from '$lib/components/shared/Tooltip.svelte';
 	import { formatCaptureDate }    from '$lib/utils/date';
 	import { memoriesStore }        from '$lib/store.svelte';
@@ -47,59 +50,249 @@
 		onRecordView
 	}: Props = $props();
 
-	let isManuallyUnlocked  = $state<boolean>( false );
-	let isEphemeralRevealed = $state<boolean>( false );
-	let secondsLeft         = $state<number | undefined>( undefined );
-	let timerInterval       = $state<ReturnType<typeof setInterval> | null>( null );
+	let isManuallyUnlocked     = $state<boolean>( false );
+	let isEphemeralRevealed    = $state<boolean>( false );
+	let isHolding              = $state<boolean>( false );
+	let isLocalReplayActive    = $state<boolean>( false );
+	let remainingMs            = $state<number | null>( null );
+	let animFrameId            = $state<number | null>( null );
+	let lastTimestamp          = $state<number | null>( null );
+	let isObscured             = $state<boolean>( false );
+	let passwordSecondsLeft    = $state<number | undefined>( undefined );
+	let passwordTimerInterval  = $state<ReturnType<typeof setInterval> | null>( null );
 
 	const isUnlocked        = $derived<boolean>( !moment.metadata?.password || isManuallyUnlocked || memoriesStore.isMomentUnlocked( moment.id ) );
 	const isCreator         = $derived<boolean>( Boolean( moment.created_by && moment.created_by === currentUserId ) );
+	const isSuperAdmin      = $derived<boolean>( memoriesStore.currentUser.role === 'super_admin' );
+	const canEdit           = $derived<boolean>( memoriesStore.canEditMoment( moment ) );
+	const canDelete         = $derived<boolean>( memoriesStore.canDeleteMoment( moment ) );
+	const canReplay         = $derived<boolean>( Boolean( moment.metadata?.is_temporal && ( isSuperAdmin || isCreator ) ) );
 	const hasCustomBg       = $derived<boolean>( Boolean( moment.metadata?.bgColor ) );
 	const customBgColor     = $derived<string>( moment.metadata?.bgColor || '#7C3AED' );
+	const hasMedia          = $derived<boolean>( Boolean( moment.metadata?.imageUrl || moment.metadata?.videoUrl ) );
+	const totalDuration     = $derived<number>( moment.metadata?.timer || 5 );
+	const totalDurationMs   = $derived<number>( totalDuration * 1000 );
+	const currentRemainingMs = $derived<number>(
+		remainingMs !== null ? remainingMs : totalDurationMs
+	);
+	const secondsLeft       = $derived<number>( Math.max( 0, Math.ceil( currentRemainingMs / 1000 ) ) );
+	const progressPercent   = $derived<number>(
+		Math.max( 0, Math.min( 100, ( currentRemainingMs / totalDurationMs ) * 100 ) )
+	);
+	const effectiveIsViewed = $derived<boolean>(
+		isLocalReplayActive ? false : Boolean( isViewed || currentRemainingMs <= 0 )
+	);
 
-	$effect( () => {
-		if ( isUnlocked && moment.metadata?.timer && !timerInterval && secondsLeft === undefined ) {
-			startTimer();
-		}
-	} );
+	const shouldShowEphemeralCover = $derived<boolean>(
+		Boolean( moment.metadata?.is_temporal && ( !isEphemeralRevealed || !isHolding ) )
+	);
 
-	function startTimer(): void {
-		if ( !moment.metadata?.timer || timerInterval ) {
+	function stepTimer( now: number ): void {
+		if ( !isHolding || isObscured ) {
+			lastTimestamp = null;
+			animFrameId = null;
 			return;
 		}
 
-		secondsLeft = moment.metadata.timer;
-		timerInterval = setInterval( () => {
-			if ( secondsLeft && secondsLeft > 1 ) {
-				secondsLeft -= 1;
+		if ( lastTimestamp !== null ) {
+			const elapsed = now - lastTimestamp;
+			const updated = Math.max( 0, ( remainingMs ?? totalDurationMs ) - elapsed );
+			remainingMs = updated;
+
+			if ( updated <= 0 ) {
+				remainingMs = 0;
+				isHolding = false;
+				isEphemeralRevealed = false;
+				isLocalReplayActive = false;
+				lastTimestamp = null;
+				animFrameId = null;
+				if ( onRecordView ) {
+					onRecordView( moment.id );
+				}
+				return;
+			}
+		}
+
+		lastTimestamp = now;
+		animFrameId = requestAnimationFrame( stepTimer );
+	}
+
+	function startTimer(): void {
+		if ( animFrameId ) {
+			cancelAnimationFrame( animFrameId );
+			animFrameId = null;
+		}
+		lastTimestamp = performance.now();
+		animFrameId = requestAnimationFrame( stepTimer );
+	}
+
+	function stopTimer(): void {
+		if ( animFrameId ) {
+			cancelAnimationFrame( animFrameId );
+			animFrameId = null;
+		}
+		lastTimestamp = null;
+	}
+
+	function startPasswordTimer(): void {
+		if ( !moment.metadata?.timer || passwordTimerInterval ) {
+			return;
+		}
+
+		passwordSecondsLeft = moment.metadata.timer;
+		passwordTimerInterval = setInterval( () => {
+			if ( passwordSecondsLeft && passwordSecondsLeft > 1 ) {
+				passwordSecondsLeft -= 1;
 			} else {
-				// El tiempo expiró -> se vuelve a bloquear
-				if ( timerInterval ) {
-					clearInterval( timerInterval );
-					timerInterval = null;
+				if ( passwordTimerInterval ) {
+					clearInterval( passwordTimerInterval );
+					passwordTimerInterval = null;
 				}
 				isManuallyUnlocked = false;
 				memoriesStore.lockMoment( moment.id );
-				secondsLeft = 0;
+				passwordSecondsLeft = 0;
 			}
 		}, 1000 );
 	}
 
-	onDestroy( () => {
-		if ( timerInterval ) {
-			clearInterval( timerInterval );
+	function handleStartHolding(): void {
+		if ( isObscured || currentRemainingMs <= 0 ) {
+			return;
+		}
+
+		if ( remainingMs === null ) {
+			remainingMs = totalDurationMs;
+		}
+
+		isHolding = true;
+		isEphemeralRevealed = true;
+
+		startTimer();
+	}
+
+	function handleStopHolding(): void {
+		if ( !isHolding ) {
+			return;
+		}
+
+		isHolding = false;
+		stopTimer();
+
+		if ( currentRemainingMs > 0 ) {
+			isEphemeralRevealed = false;
+		}
+	}
+
+	function handleSuperAdminReplay(): void {
+		memoriesStore.resetMomentViewForUser( moment.id, currentUserId );
+		isLocalReplayActive = true;
+		remainingMs = totalDurationMs;
+		isObscured = false;
+		isHolding = true;
+		isEphemeralRevealed = true;
+
+		startTimer();
+	}
+
+	function handleCardWindowBlur(): void {
+		if ( moment.metadata?.is_temporal && ( isEphemeralRevealed || isHolding ) ) {
+			isObscured = true;
+			handleStopHolding();
+		}
+	}
+
+	function handleCardWindowFocus(): void {
+		if ( moment.metadata?.is_temporal ) {
+			isObscured = false;
+		}
+	}
+
+	function handleCardVisibilityChange(): void {
+		if ( moment.metadata?.is_temporal && document.hidden ) {
+			isObscured = true;
+			handleStopHolding();
+		} else if ( moment.metadata?.is_temporal && !document.hidden ) {
+			isObscured = false;
+		}
+	}
+
+	function handleCardKeyCapture( e: KeyboardEvent ): void {
+		if ( !moment.metadata?.is_temporal ) {
+			return;
+		}
+
+		// Detección y bloqueo reactivo de captura de pantalla y pérdida de foco
+		const isCaptureOrModifierKey =
+			e.key === 'PrintScreen' ||
+			e.code === 'PrintScreen' ||
+			e.keyCode === 44 ||
+			e.key === 'Shift' ||
+			e.key === 'Control' ||
+			e.key === 'Alt' ||
+			e.key === 'Meta' ||
+			e.key === 'F12' ||
+			e.shiftKey ||
+			e.ctrlKey ||
+			e.altKey ||
+			e.metaKey;
+
+		if ( isCaptureOrModifierKey ) {
+			isObscured = true;
+			handleStopHolding();
+
+			try {
+				navigator.clipboard?.writeText( '' );
+			} catch {}
+		}
+	}
+
+	$effect( () => {
+		if ( !moment.metadata?.is_temporal && isUnlocked && moment.metadata?.timer && !passwordTimerInterval && passwordSecondsLeft === undefined ) {
+			startPasswordTimer();
 		}
 	} );
 
-	function handleRevealEphemeral(): void {
-		isEphemeralRevealed = true;
-		if ( onRecordView ) {
-			onRecordView( moment.id );
+	$effect( () => {
+		if ( typeof window === 'undefined' ) {
+			return;
 		}
-		if ( moment.metadata?.timer ) {
-			startTimer();
+
+		if ( moment.metadata?.is_temporal && !effectiveIsViewed ) {
+			window.addEventListener( 'blur', handleCardWindowBlur );
+			window.addEventListener( 'focus', handleCardWindowFocus );
+			document.addEventListener( 'visibilitychange', handleCardVisibilityChange );
+			window.addEventListener( 'keydown', handleCardKeyCapture );
+			window.addEventListener( 'keyup', handleCardKeyCapture );
+			window.addEventListener( 'pointerup', handleStopHolding );
+			window.addEventListener( 'pointercancel', handleStopHolding );
+
+			return () => {
+				window.removeEventListener( 'blur', handleCardWindowBlur );
+				window.removeEventListener( 'focus', handleCardWindowFocus );
+				document.removeEventListener( 'visibilitychange', handleCardVisibilityChange );
+				window.removeEventListener( 'keydown', handleCardKeyCapture );
+				window.removeEventListener( 'keyup', handleCardKeyCapture );
+				window.removeEventListener( 'pointerup', handleStopHolding );
+				window.removeEventListener( 'pointercancel', handleStopHolding );
+			};
 		}
-	}
+	} );
+
+	onDestroy( () => {
+		stopTimer();
+		if ( passwordTimerInterval ) {
+			clearInterval( passwordTimerInterval );
+		}
+		if ( typeof window !== 'undefined' ) {
+			window.removeEventListener( 'blur', handleCardWindowBlur );
+			window.removeEventListener( 'focus', handleCardWindowFocus );
+			document.removeEventListener( 'visibilitychange', handleCardVisibilityChange );
+			window.removeEventListener( 'keydown', handleCardKeyCapture );
+			window.removeEventListener( 'keyup', handleCardKeyCapture );
+			window.removeEventListener( 'pointerup', handleStopHolding );
+			window.removeEventListener( 'pointercancel', handleStopHolding );
+		}
+	} );
 
 	function handleUnlockRequest(): void {
 		if ( onUnlock ) {
@@ -123,8 +316,12 @@
 	}
 </script>
 
+<!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
-	class="group relative flex flex-col justify-between rounded-3xl overflow-hidden transition-all duration-500 backdrop-blur-md shadow-lg hover:shadow-2xl { hasCustomBg ? 'bg-white/75 dark:bg-dark-card/75' : 'bg-white/70 dark:bg-dark-card/70 border border-stone-200/60 dark:border-white/10' }"
+	onpointerleave={handleStopHolding}
+	onpointerup={handleStopHolding}
+	onpointercancel={handleStopHolding}
+	class="group relative flex flex-col justify-between rounded-3xl overflow-hidden transition-all duration-500 backdrop-blur-md shadow-lg hover:shadow-2xl min-h-72.5 w-full { hasCustomBg ? 'bg-white/75 dark:bg-dark-card/75' : 'bg-white/70 dark:bg-dark-card/70 border border-stone-200/60 dark:border-white/10' }"
 	style={ hasCustomBg ? `border: 1px solid ${ customBgColor }40; box-shadow: 0 10px 30px -10px ${ customBgColor }33;` : '' }
 >
 	{#if hasCustomBg}
@@ -146,11 +343,55 @@
 	{/if}
 
 	<!-- Cubierta efímera para momentos de 'ver una sola vez' -->
-	{#if moment.metadata?.is_temporal && ( isViewed || !isEphemeralRevealed )}
+	{#if shouldShowEphemeralCover}
 		<MomentEphemeralCover
-			{isViewed}
-			onReveal={handleRevealEphemeral}
+			isViewed={effectiveIsViewed}
+			canReplay={canReplay}
+			bgColor={customBgColor}
+			secondsLeft={secondsLeft}
+			totalDuration={totalDuration}
+			onStartHolding={handleStartHolding}
+			onStopHolding={handleStopHolding}
+			onReplay={handleSuperAdminReplay}
 		/>
+	{/if}
+
+	<!-- Escudo reactivo Anti-capturas y Anti-recortes de pantalla -->
+	{#if isObscured}
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div
+			onclick={() => { isObscured = false; }}
+			class="absolute inset-x-0 top-0 bottom-11.25 z-50 flex flex-col items-center justify-center p-5 bg-stone-950/98 backdrop-blur-3xl text-center text-white cursor-pointer select-none space-y-2"
+		>
+			<div class="w-12 h-12 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30 animate-pulse shadow-xl">
+				<EyeOff size={ 22 } />
+			</div>
+			<div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-500/15 text-rose-300 text-[10px] font-extrabold uppercase tracking-widest border border-rose-500/25">
+				<span>Captura Bloqueada</span>
+			</div>
+			<h4 class="text-sm font-extrabold text-white">Protección de Privacidad Activa</h4>
+			<p class="text-[11px] text-stone-400 max-w-xs leading-relaxed">
+				Por seguridad, este contenido confidencial se oculta automáticamente al detectar intentos de captura o pérdida de foco.
+			</p>
+			<span class="text-[10px] text-amber-400/80 font-semibold underline underline-offset-2">
+				Haz clic para continuar viendo
+			</span>
+		</div>
+	{/if}
+
+	<!-- Contador flotante visible para momentos efímeros en visualización -->
+	{#if isEphemeralRevealed && isHolding && secondsLeft > 0}
+		<div class="absolute { hasMedia ? 'top-3' : 'bottom-20' } left-3 right-3 z-30 flex items-center justify-between px-3.5 py-2 rounded-2xl bg-amber-500/90 text-stone-950 backdrop-blur-md shadow-xl border border-amber-300/40 animate-pulse">
+			<div class="flex items-center gap-1.5 font-black text-xs tracking-tight">
+				<Flame size={ 16 } class="animate-bounce" />
+				<span>Momento Efímero</span>
+			</div>
+			<div class="flex items-center gap-1.5 font-black text-xs bg-black/20 px-2.5 py-0.5 rounded-full text-white">
+				<Clock size={ 13 } />
+				<span>{ secondsLeft }s restantes</span>
+			</div>
+		</div>
 	{/if}
 
 	<!-- Bloqueo por Contraseña -->
@@ -178,32 +419,52 @@
 		<!-- Imagen / Video Multimedia -->
 		{#if moment.metadata?.imageUrl}
 			<div class="aspect-4/5 overflow-hidden rounded-2xl relative shadow-inner mb-3">
-				<img
-					src={ moment.metadata.imageUrl }
-					alt={ moment.title || 'Foto de recuerdo' }
-					class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-				/>
+				{#if moment.metadata.is_temporal}
+					<SecureEphemeralMedia
+						imageUrl={moment.metadata.imageUrl}
+						alt={ moment.title || 'Foto de recuerdo' }
+						isEphemeral={ true }
+						isObscured={ isObscured }
+						watermarkText={`${ memoriesStore.currentUser.name } • Confidencial`}
+					/>
+				{:else}
+					<img
+						src={ moment.metadata.imageUrl }
+						alt={ moment.title || 'Foto de recuerdo' }
+						class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+					/>
+				{/if}
 
-				{#if secondsLeft !== undefined && secondsLeft > 0}
+				{#if !moment.metadata.is_temporal && passwordSecondsLeft !== undefined && passwordSecondsLeft > 0}
 					<div class="absolute top-2.5 right-2.5 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold text-amber-300 bg-black/60 backdrop-blur-md border border-amber-400/30">
 						<Clock size={ 12 } />
-						<span>{ secondsLeft }s restantes</span>
+						<span>{ passwordSecondsLeft }s restantes</span>
 					</div>
 				{/if}
 			</div>
 		{:else if moment.metadata?.videoUrl}
 			<div class="aspect-video overflow-hidden rounded-2xl relative shadow-inner bg-black mb-3">
-				<!-- svelte-ignore a11y_media_has_caption -->
-				<video
-					src={ moment.metadata.videoUrl }
-					controls
-					class="w-full h-full object-cover"
-				></video>
+				{#if moment.metadata.is_temporal}
+					<SecureEphemeralMedia
+						videoUrl={moment.metadata.videoUrl}
+						alt={ moment.title || 'Video de recuerdo' }
+						isEphemeral={ true }
+						isObscured={ isObscured }
+						watermarkText={`${ memoriesStore.currentUser.name } • Confidencial`}
+					/>
+				{:else}
+					<!-- svelte-ignore a11y_media_has_caption -->
+					<video
+						src={ moment.metadata.videoUrl }
+						controls
+						class="w-full h-full object-cover"
+					></video>
+				{/if}
 			</div>
 		{/if}
 
 		<!-- Texto / Contenido y Título -->
-		<div class="p-3 space-y-2">
+		<div class="p-3 space-y-2 { moment.metadata?.is_temporal ? 'select-none' : '' } { !hasMedia && isEphemeralRevealed ? 'pb-24' : '' }">
 			<!-- Tags automáticos generados -->
 			<div class="flex flex-wrap items-center gap-1.5">
 				{#each moment.tags as tag}
@@ -237,9 +498,30 @@
 		</div>
 	</div>
 
+	<!-- Línea de cuenta regresiva con efecto de mecha/fuego quemándose -->
+	{#if moment.metadata?.is_temporal && !effectiveIsViewed && secondsLeft > 0}
+		<div class="relative z-40 w-full h-1.5 bg-black/40 overflow-visible mt-auto mb-1 { isEphemeralRevealed && isHolding ? 'opacity-100' : 'opacity-75' }">
+			<!-- Pista brillante que se va consumiendo hacia la izquierda sincronizada 1:1 con el contador -->
+			<div
+				class="h-full relative rounded-r-full shadow-[0_0_12px_rgba(249,115,22,0.85),0_0_4px_rgba(254,240,138,1)] transition-[width] duration-75 ease-linear"
+				style="width: { progressPercent }%; background: linear-gradient(90deg, #dc2626 0%, #ea580c 45%, #f59e0b 80%, #fef08a 100%);"
+			>
+				<!-- Punta incandescente / Chispa de fuego en el extremo que se va consumiendo -->
+				<div class="absolute -top-1.5 -right-2 size-4.5 rounded-full flex items-center justify-center pointer-events-none z-50">
+					<!-- Halo pulsante de combustión -->
+					<span class="absolute inset-0 rounded-full bg-orange-500/80 blur-xs animate-ping"></span>
+					<!-- Resplandor ardiente -->
+					<span class="absolute -inset-1 rounded-full bg-amber-400/60 blur-xs"></span>
+					<!-- Núcleo incandescente al rojo vivo -->
+					<span class="relative size-3.5 rounded-full bg-white shadow-[0_0_10px_3px_#f97316,0_0_18px_6px_#ef4444] border-2 border-amber-300"></span>
+				</div>
+			</div>
+		</div>
+	{/if}
+
 	<!-- Pie de Tarjeta ( Autor, Fecha y Acciones del Creador ) -->
 	<div
-		class="relative z-10 px-3.5 py-2.5 flex items-center justify-between text-[11px] mt-auto border-t transition-colors { hasCustomBg ? 'bg-black/5 dark:bg-black/20 backdrop-blur-md' : 'bg-stone-50/70 dark:bg-white/3 backdrop-blur-md border-stone-200/50 dark:border-white/5' }"
+		class="relative z-30 px-3.5 py-2.5 flex items-center justify-between text-[11px] { moment.metadata?.is_temporal && !effectiveIsViewed && secondsLeft > 0 ? '' : 'mt-auto' } border-t transition-colors { hasCustomBg ? 'bg-black/5 dark:bg-black/20 backdrop-blur-md' : 'bg-stone-50/70 dark:bg-white/3 backdrop-blur-md border-stone-200/50 dark:border-white/5' }"
 		style={ hasCustomBg ? `border-color: ${ customBgColor }26;` : '' }
 	>
 		<div class="flex items-center gap-2.5 truncate pr-2">
@@ -256,15 +538,28 @@
 			{/if}
 		</div>
 
-		<!-- Acciones exclusivas del autor creador -->
-		{#if isCreator}
-			<div class="flex items-center gap-1.5 shrink-0">
-				{#if onEdit}
+		<!-- Botones de Acción (Super Admin o Creador) -->
+		{#if canReplay || canEdit || canDelete}
+			<div class="flex items-center gap-1 shrink-0">
+				{#if canReplay}
+					<Tooltip text="Volver a ver momento efímero" side="top" sideOffset={ 6 }>
+						<button
+							type="button"
+							onclick={handleSuperAdminReplay}
+							class="size-7 rounded-xl flex items-center justify-center bg-amber-500/15 text-amber-500 dark:text-amber-400 hover:bg-amber-500/25 border border-amber-500/30 transition-all active:scale-90 cursor-pointer shadow-2xs"
+							aria-label="Volver a ver momento efímero"
+						>
+							<RotateCcw size={ 13 } />
+						</button>
+					</Tooltip>
+				{/if}
+
+				{#if canEdit && onEdit}
 					<Tooltip text="Editar momento" side="top" sideOffset={ 6 }>
 						<button
 							type="button"
 							onclick={() => onEdit && onEdit( moment )}
-							class="size-7 rounded-xl flex items-center justify-center bg-stone-100/90 dark:bg-white/10 hover:bg-brand-accent/15 text-stone-600 dark:text-stone-300 hover:text-brand-accent dark:hover:text-brand-accent border border-stone-200/70 dark:border-white/10 transition-all active:scale-90 cursor-pointer shadow-2xs"
+							class="size-7 rounded-xl flex items-center justify-center bg-stone-100/90 dark:bg-white/10 hover:bg-amber-500/15 text-stone-700 dark:text-stone-200 hover:text-amber-500 dark:hover:text-amber-400 border border-stone-200/70 dark:border-white/10 transition-all active:scale-90 cursor-pointer shadow-2xs"
 							aria-label="Editar momento"
 						>
 							<Edit3 size={ 13 } />
@@ -272,12 +567,12 @@
 					</Tooltip>
 				{/if}
 
-				{#if onDelete}
+				{#if canDelete && onDelete}
 					<Tooltip text="Eliminar momento" side="top" sideOffset={ 6 }>
 						<button
 							type="button"
 							onclick={() => onDelete && onDelete( moment.id )}
-							class="size-7 rounded-xl flex items-center justify-center bg-stone-100/90 dark:bg-white/10 hover:bg-rose-500/15 text-stone-600 dark:text-stone-300 hover:text-rose-500 dark:hover:text-rose-400 border border-stone-200/70 dark:border-white/10 transition-all active:scale-90 cursor-pointer shadow-2xs"
+							class="size-7 rounded-xl flex items-center justify-center bg-stone-100/90 dark:bg-white/10 hover:bg-rose-500/15 text-stone-700 dark:text-stone-200 hover:text-rose-500 dark:hover:text-rose-400 border border-stone-200/70 dark:border-white/10 transition-all active:scale-90 cursor-pointer shadow-2xs"
 							aria-label="Eliminar momento"
 						>
 							<Trash2 size={ 13 } />
