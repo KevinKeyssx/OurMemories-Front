@@ -34,8 +34,14 @@
 	const updateMutation = useUpdateRelationshipsMutation();
 	const deleteMutation = useDeleteRelationshipMutation();
 
+	$effect( () => {
+		if ( relationshipsQuery.data && relationshipsQuery.data.length > 0 && memoriesStore.groups.length === 0 ) {
+			memoriesStore.setGroups( relationshipsQuery.data );
+		}
+	} );
+
 	const relationshipsList = $derived<Relationship[]>(
-		relationshipsQuery.data || memoriesStore.groups
+		memoriesStore.groups.length > 0 ? memoriesStore.groups : ( relationshipsQuery.data || [] )
 	);
 
 	const currentPathName = $derived<string>(
@@ -76,7 +82,7 @@
 
 <svelte:window bind:scrollY />
 
-<div class="min-h-screen transition-all duration-500 font-sans">
+<div class="min-h-screen font-sans">
 	<!-- Banner Lateral Izquierdo de Relaciones (Desktop + Drawer Móvil) -->
 	<RelationshipsSidebar
 		relationships={relationshipsList}
