@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { FolderPlus, Layers } from '@lucide/svelte';
-	import type { MemoryEntity, MomentEntity } from '$lib/types';
+
+    import type { MemoryEntity, MomentEntity } from '$lib/types';
 	import MemoryCard from './MemoryCard.svelte';
 
 	interface Props {
@@ -10,6 +11,8 @@
 		color          ?: string;
 		onOpenCreate    : () => void;
 		onUnlockMemory ?: ( memory: MemoryEntity ) => void;
+		onEditMemory   ?: ( memory: MemoryEntity ) => void;
+		onDeleteMemory ?: ( memory: MemoryEntity ) => void;
 	}
 
 	let {
@@ -18,7 +21,9 @@
 		moments,
 		color = '#f43f5e',
 		onOpenCreate,
-		onUnlockMemory
+		onUnlockMemory,
+		onEditMemory,
+		onDeleteMemory
 	}: Props = $props();
 
 	function getMomentsCount( memoryId: string ): number {
@@ -43,7 +48,7 @@
 
 		<button
 			type="button"
-			onclick={onOpenCreate}
+			onclick={ onOpenCreate }
 			class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all active:scale-95 cursor-pointer hover:brightness-110"
 			style="color: { color }; border-color: { color }66; background-color: { color }0d;"
 		>
@@ -57,7 +62,7 @@
 		<!-- Tarjeta de Acción Rápida para Crear Memoria -->
 		<button
 			type="button"
-			onclick={onOpenCreate}
+			onclick={ onOpenCreate }
 			class="group flex flex-col items-center justify-center h-64 w-60 shrink-0 rounded-3xl border-2 border-dashed border-stone-200 dark:border-white/10 bg-stone-50/50 dark:bg-white/1 transition-all duration-300 p-6 text-center space-y-3 cursor-pointer"
 			onmouseenter={( e: MouseEvent ) => {
 				( e.currentTarget as HTMLElement ).style.borderColor = `${ color }80`;
@@ -84,10 +89,12 @@
 			<MemoryCard
 				{memory}
 				{relationPath}
-				momentsCount={getMomentsCount( memory.id )}
-				onUnlock={onUnlockMemory}
+				{color}
+				momentsCount={ getMomentsCount( memory.id ) }
+				onUnlock={ onUnlockMemory }
+				onEdit={ onEditMemory }
+				onDelete={ onDeleteMemory }
 			/>
 		{/each}
 	</div>
 </div>
-
