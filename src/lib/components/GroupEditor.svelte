@@ -99,7 +99,8 @@
 			updated_at : new Date().toISOString(),
 			is_active  : true,
 			type_id    : defaultTypeId,
-			color      : defaultColor
+			color      : defaultColor,
+			order      : localRelationships.length
 		};
 
 		localRelationships = [ ...localRelationships, newRel ];
