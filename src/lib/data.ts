@@ -1,4 +1,15 @@
-import type { Sex, RelationshipType, User, Relationship, MomentEntity, MemoryEntity, MomentUserView } from './types';
+import type {
+    Sex,
+    RelationshipType,
+    User,
+    Relationship,
+    RelationshipUserRole,
+    RelationshipInvitation,
+    MomentEntity,
+    MemoryEntity,
+    MomentUserView
+} from './types';
+
 
 export const INITIAL_SEXES: Sex[] = [
 	{
@@ -17,6 +28,25 @@ export const INITIAL_SEXES: Sex[] = [
 		short_name : 'O'
 	}
 ];
+
+
+export const DEFAULT_RELATIONSHIP_COLORS: string[] = [
+	'#f43f5e',
+	'#ec4899',
+	'#d946ef',
+	'#a855f7',
+	'#8b5cf6',
+	'#6366f1',
+	'#3b82f6',
+	'#0ea5e9',
+	'#06b6d4',
+	'#14b8a6',
+	'#10b981',
+	'#22c55e',
+	'#84cc16',
+	'#eab308'
+];
+
 
 export const INITIAL_RELATIONSHIP_TYPES: RelationshipType[] = [
 	{
@@ -41,6 +71,7 @@ export const INITIAL_RELATIONSHIP_TYPES: RelationshipType[] = [
 	}
 ];
 
+
 export const CURRENT_USER: User = {
 	id         : 'user_1',
 	name       : 'Kevin',
@@ -56,6 +87,132 @@ export const CURRENT_USER: User = {
 	role       : 'super_admin'
 };
 
+export const INITIAL_USERS: User[] = [
+	CURRENT_USER,
+	{
+		id         : 'user_2',
+		name       : 'Elena',
+		last_name  : 'Rosas',
+		email      : 'elena@ourmemories.com',
+		phone      : '+56987654321',
+		created_at : '2023-02-14T00:00:00.000Z',
+		updated_at : '2026-10-31T00:00:00.000Z',
+		points     : 380,
+		birthdate  : '1999-08-20',
+		is_active  : true,
+		sex_id     : '2',
+		role       : 'user'
+	},
+	{
+		id         : 'user_3',
+		name       : 'Carlos',
+		last_name  : 'Mendoza',
+		email      : 'carlos@ourmemories.com',
+		phone      : '+56911223344',
+		created_at : '2023-04-10T00:00:00.000Z',
+		updated_at : '2026-10-31T00:00:00.000Z',
+		points     : 210,
+		birthdate  : '1997-12-05',
+		is_active  : true,
+		sex_id     : '1',
+		role       : 'user'
+	},
+	{
+		id         : 'user_4',
+		name       : 'Abuelo Juan',
+		last_name  : 'Gómez',
+		email      : 'juan.abuelo@ourmemories.com',
+		phone      : '+56955667788',
+		created_at : '2023-03-01T00:00:00.000Z',
+		updated_at : '2026-10-31T00:00:00.000Z',
+		points     : 190,
+		birthdate  : '1955-03-12',
+		is_active  : true,
+		sex_id     : '1',
+		role       : 'user'
+	},
+	{
+		id         : 'user_5',
+		name       : 'Mamá',
+		last_name  : 'Carmen',
+		email      : 'carmen.mama@ourmemories.com',
+		phone      : '+56999887766',
+		created_at : '2023-03-01T00:00:00.000Z',
+		updated_at : '2026-10-31T00:00:00.000Z',
+		points     : 320,
+		birthdate  : '1970-07-22',
+		is_active  : true,
+		sex_id     : '2',
+		role       : 'user'
+	}
+];
+
+export const INITIAL_RELATIONSHIP_USER_ROLES: RelationshipUserRole[] = [
+	{
+		id              : 'rur_1',
+		relationship_id : 'rel_1',
+		user_id         : 'user_1',
+		role            : 'owner',
+		created_at      : '2023-02-14T00:00:00.000Z'
+	},
+	{
+		id              : 'rur_2',
+		relationship_id : 'rel_1',
+		user_id         : 'user_2',
+		role            : 'admin',
+		created_at      : '2023-02-14T00:00:00.000Z'
+	},
+	{
+		id              : 'rur_3',
+		relationship_id : 'rel_2',
+		user_id         : 'user_1',
+		role            : 'owner',
+		created_at      : '2023-03-01T00:00:00.000Z'
+	},
+	{
+		id              : 'rur_4',
+		relationship_id : 'rel_2',
+		user_id         : 'user_5',
+		role            : 'admin',
+		created_at      : '2023-03-01T00:00:00.000Z'
+	},
+	{
+		id              : 'rur_5',
+		relationship_id : 'rel_2',
+		user_id         : 'user_4',
+		role            : 'member',
+		created_at      : '2023-03-01T00:00:00.000Z'
+	},
+	{
+		id              : 'rur_6',
+		relationship_id : 'rel_3',
+		user_id         : 'user_1',
+		role            : 'owner',
+		created_at      : '2023-04-10T00:00:00.000Z'
+	},
+	{
+		id              : 'rur_7',
+		relationship_id : 'rel_3',
+		user_id         : 'user_3',
+		role            : 'member',
+		created_at      : '2023-04-10T00:00:00.000Z'
+	}
+];
+
+export const INITIAL_RELATIONSHIP_INVITATIONS: RelationshipInvitation[] = [
+	{
+		id              : 'inv_1',
+		relationship_id : 'rel_1',
+		invited_by      : 'user_1',
+		type            : 'qr_link',
+		role            : 'member',
+		token           : 'token_demo_rel1_123',
+		expires_at      : new Date( Date.now() + 5 * 60 * 1000 ).toISOString(),
+		created_at      : new Date().toISOString(),
+		status          : 'pending'
+	}
+];
+
 export const INITIAL_RELATIONSHIPS: Relationship[] = [
 	{
 		id         : 'rel_1',
@@ -69,7 +226,8 @@ export const INITIAL_RELATIONSHIPS: Relationship[] = [
 		updated_at : '2026-10-31T00:00:00.000Z',
 		is_active  : true,
 		type_id    : '1',
-		color      : '#f43f5e'
+		color      : '#f43f5e',
+		order      : 0
 	},
 	{
 		id         : 'rel_2',
@@ -83,7 +241,8 @@ export const INITIAL_RELATIONSHIPS: Relationship[] = [
 		updated_at : '2026-10-31T00:00:00.000Z',
 		is_active  : true,
 		type_id    : '2',
-		color      : '#c084fc'
+		color      : '#c084fc',
+		order      : 1
 	},
 	{
 		id         : 'rel_3',
@@ -97,7 +256,8 @@ export const INITIAL_RELATIONSHIPS: Relationship[] = [
 		updated_at : '2026-10-31T00:00:00.000Z',
 		is_active  : true,
 		type_id    : '3',
-		color      : '#38bdf8'
+		color      : '#38bdf8',
+		order      : 2
 	}
 ];
 
