@@ -25,7 +25,15 @@
 
 @layer base {
 	body {
-		@apply transition-colors duration-500 ease-in-out font-sans bg-brand-paper text-brand-ink dark:bg-dark-paper dark:text-dark-ink;
+		@apply font-sans bg-dark-paper text-dark-ink;
+	}
+
+	html.light body {
+		@apply bg-brand-paper text-brand-ink;
+	}
+
+	html.dark body {
+		@apply bg-dark-paper text-dark-ink;
 	}
 
 	.light {
@@ -37,7 +45,7 @@
 	}
 
 	h1, h2, h3, h4, blockquote {
-		@apply font-display text-brand-ink dark:text-dark-ink transition-colors duration-500;
+		@apply font-display text-brand-ink dark:text-dark-ink;
 	}
 }
 
