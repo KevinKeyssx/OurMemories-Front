@@ -32,10 +32,26 @@ export const createPathName = ( name: string ): string => {
 
 export const getCurrentUser = (): User => currentUserDatabase;
 
-export const getRelationshipsDatabase = (): Relationship[] => relationshipsDatabase;
+export const getRelationshipsDatabase = (): Relationship[] => {
+	return [ ...relationshipsDatabase ].sort( ( a: Relationship, b: Relationship ) => {
+		const orderA = typeof a.order === 'number' ? a.order : 0;
+		const orderB = typeof b.order === 'number' ? b.order : 0;
+		if ( orderA !== orderB ) {
+			return orderA - orderB;
+		}
+		return new Date( a.created_at ).getTime() - new Date( b.created_at ).getTime();
+	} );
+};
 
 export const setRelationshipsDatabase = ( updated: Relationship[] ): void => {
-	relationshipsDatabase = updated;
+	relationshipsDatabase = [ ...updated ].sort( ( a: Relationship, b: Relationship ) => {
+		const orderA = typeof a.order === 'number' ? a.order : 0;
+		const orderB = typeof b.order === 'number' ? b.order : 0;
+		if ( orderA !== orderB ) {
+			return orderA - orderB;
+		}
+		return new Date( a.created_at ).getTime() - new Date( b.created_at ).getTime();
+	} );
 };
 
 export const getRelationshipTypes = (): RelationshipType[] => relationshipTypesDatabase;
