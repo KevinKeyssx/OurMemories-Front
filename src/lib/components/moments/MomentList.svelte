@@ -8,8 +8,8 @@
 		Video as VideoIcon,
 		FileText,
 		Quote as QuoteIcon,
-		Layers,
-		Compass
+        Lock,
+        MessageSquareHeart
 	} from '@lucide/svelte';
 
     import type {
@@ -20,6 +20,7 @@
 	import MomentCard           from './MomentCard.svelte';
 	import ConfirmDialog        from '$lib/components/shared/ConfirmDialog.svelte';
 	import UploadModal          from '$lib/components/UploadModal.svelte';
+	import Tooltip              from '$lib/components/shared/Tooltip.svelte';
 
 
     interface Props {
@@ -47,7 +48,7 @@
 
 
     let searchQuery         = $state<string>( '' );
-	let selectedScope       = $state<'all' | 'standalone'>( 'all' );
+	let selectedScope       = $state<'all' | 'locked'>( 'all' );
 	let selectedTag         = $state<MomentTag | 'all'>( 'all' );
 	let editingMoment       = $state<MomentEntity | null>( null );
 	let momentIdToDelete    = $state<string | null>( null );
@@ -96,8 +97,8 @@
 
 	const filteredMoments = $derived.by<MomentEntity[]>( () => {
 		return moments.filter( ( m: MomentEntity ) => {
-			// Filtro por alcance ( Todos vs Solo Sueltos )
-			if ( selectedScope === 'standalone' && m.memory_id ) {
+			// Filtro por alcance ( Todos vs Bloqueados )
+			if ( selectedScope === 'locked' && !m.metadata?.password && !m.metadata?.is_blocked ) {
 				return false;
 			}
 
@@ -127,7 +128,7 @@
 
 	const columns = $derived.by<MomentEntity[][]>( () => {
 		const count = columnCount;
-		const buckets: MomentEntity[][] = Array.from( { length: count }, () => [] );
+		const buckets: MomentEntity[][] = Array.from({ length: count }, () => [] );
 
 		filteredMoments.forEach( ( moment: MomentEntity, index: number ) => {
 			buckets[ index % count ].push( moment );
@@ -161,27 +162,33 @@
 			/>
 		</div>
 
-		<!-- Selector de Alcance: Todos vs Sueltos -->
+		<!-- Selector de Alcance: Todos vs Bloqueados -->
 		<div class="flex items-center gap-1.5 p-1 bg-stone-100 dark:bg-white/5 rounded-2xl shrink-0">
-			<button
-				type="button"
-				onclick={() => ( selectedScope = 'all' )}
-				class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer { selectedScope === 'all' ? 'shadow-xs' : 'text-stone-500 hover:text-stone-800 dark:hover:text-stone-200' }"
-				style={ selectedScope === 'all' ? `background-color: ${ color }1f; color: ${ color }; border: 1px solid ${ color }4d;` : 'border: 1px solid transparent;' }
-			>
-				<Layers size={ 13 } />
-				<span>Todos ( { moments.length } )</span>
-			</button>
+			<Tooltip text="Todos los momentos">
+				<button
+					type="button"
+					onclick={ () => ( selectedScope = 'all' ) }
+					class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer { selectedScope === 'all' ? 'shadow-xs' : 'text-stone-500 hover:text-stone-800 dark:hover:text-stone-200' }"
+					style={ selectedScope === 'all' ? `background-color: ${ color }1f; color: ${ color }; border: 1px solid ${ color }4d;` : 'border: 1px solid transparent;' }
+					aria-label="Todos los momentos"
+				>
+					<MessageSquareHeart size={ 15 } />
+					<span>( { moments.length } )</span>
+				</button>
+			</Tooltip>
 
-			<button
-				type="button"
-				onclick={() => ( selectedScope = 'standalone' )}
-				class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer { selectedScope === 'standalone' ? 'shadow-xs' : 'text-stone-500 hover:text-stone-800 dark:hover:text-stone-200' }"
-				style={ selectedScope === 'standalone' ? `background-color: ${ color }1f; color: ${ color }; border: 1px solid ${ color }4d;` : 'border: 1px solid transparent;' }
-			>
-				<Compass size={ 13 } />
-				<span>Sueltos ( { moments.filter( ( m ) => !m.memory_id ).length } )</span>
-			</button>
+			<Tooltip text="Momentos bloqueados con contraseña">
+				<button
+					type="button"
+					onclick={ () => ( selectedScope = 'locked' ) }
+					class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer { selectedScope === 'locked' ? 'shadow-xs' : 'text-stone-500 hover:text-stone-800 dark:hover:text-stone-200' }"
+					style={ selectedScope === 'locked' ? `background-color: ${ color }1f; color: ${ color }; border: 1px solid ${ color }4d;` : 'border: 1px solid transparent;' }
+					aria-label="Momentos bloqueados con contraseña"
+				>
+					<Lock size={ 15 } />
+					<span>( { moments.filter( ( m: MomentEntity ) => Boolean( m.metadata?.password || m.metadata?.is_blocked ) ).length } )</span>
+				</button>
+			</Tooltip>
 		</div>
 	</div>
 
@@ -214,6 +221,8 @@
 			<p class="text-xs text-stone-500 max-w-sm mt-1 leading-relaxed">
 				{#if searchQuery.trim() !== ''}
 					No hay momentos que coincidan con "{ searchQuery }". Intenta con otra palabra.
+				{:else if selectedScope === 'locked'}
+					No hay momentos protegidos con contraseña para { relationName }.
 				{:else}
 					Aún no hay momentos con este filtro para { relationName }.
 				{/if}
