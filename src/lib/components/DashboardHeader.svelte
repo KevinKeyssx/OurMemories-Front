@@ -43,7 +43,7 @@
 
 <svelte:window onclick={() => { if ( isUserMenuOpen ) isUserMenuOpen = false; }} />
 
-<div class="fixed top-0 left-0 lg:left-24 right-0 z-30 transition-all duration-700 {isScrolled ? 'bg-brand-paper/95 dark:bg-dark-paper/95 backdrop-blur-xl shadow-xl border-b border-stone-200/20 dark:border-white/5' : 'bg-transparent'}">
+<div class="fixed top-0 left-0 lg:left-24 right-0 z-30 transition-all duration-700 { isScrolled ? 'bg-brand-paper/95 dark:bg-dark-paper/95 backdrop-blur-xl shadow-xl' : 'bg-transparent' }">
 	<header class="max-w-7xl mx-auto px-4 sm:px-6 md:px-12 transition-all duration-700 flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-8 {isScrolled ? 'py-3' : 'pt-10 pb-6'}">
 		<div class="flex items-center justify-between">
 			<div class="flex items-center gap-3">
