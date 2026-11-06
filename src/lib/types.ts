@@ -45,32 +45,60 @@ export interface Relationship {
 	is_active  : boolean;
 	type_id    : string;
 	color      : string;
+	order      : number;
+}
+
+export type RelationshipMemberRole = 'owner' | 'admin' | 'member';
+
+export interface RelationshipUserRole {
+	id              : string;
+	relationship_id : string;
+	user_id         : string;
+	role            : RelationshipMemberRole;
+	created_at      : string;
+	updated_at?     : string;
+}
+
+export type InvitationStatus = 'pending' | 'accepted' | 'expired';
+export type InvitationType   = 'qr_link' | 'email';
+
+export interface RelationshipInvitation {
+	id              : string;
+	relationship_id : string;
+	invited_by      : string;
+	type            : InvitationType;
+	email          ?: string;
+	role            : 'admin' | 'member';
+	token           : string;
+	expires_at      : string;
+	created_at      : string;
+	status          : InvitationStatus;
 }
 
 export type MomentTag = 'image' | 'video' | 'text' | 'quote';
 
 export interface MomentMetadata {
-	imageUrl    ?: string;
-	videoUrl    ?: string;
-	bgColor     ?: string;
-	is_blocked  ?: boolean;
-	password    ?: string;
-	timer       ?: number;
-	is_temporal ?: boolean;
+	imageUrl?       : string;
+	videoUrl?       : string;
+	bgColor?        : string;
+	is_blocked?     : boolean;
+	password?       : string;
+	timer?          : number;
+	is_temporal?    : boolean;
 }
 
 export interface MomentEntity {
 	id              : string;
 	relationship_id : string;
-	memory_id      ?: string;
-	title          ?: string;
-	content        ?: string;
+	memory_id?      : string;
+	title?          : string;
+	content?        : string;
 	author          : string;
 	created_by      : string;
 	created_at      : string;
-	updated_at     ?: string;
-	capture_date   ?: string;
-	metadata       ?: MomentMetadata;
+	updated_at?     : string;
+	capture_date?   : string;
+	metadata?       : MomentMetadata;
 	tags            : MomentTag[];
 }
 
@@ -78,15 +106,15 @@ export interface MemoryEntity {
 	id              : string;
 	relationship_id : string;
 	title           : string;
-	description    ?: string;
-	cover_url      ?: string;
+	description?    : string;
+	cover_url?      : string;
 	created_by      : string;
 	created_at      : string;
 	updated_at      : string;
-	is_blocked     ?: boolean;
-	password       ?: string;
-	timer          ?: number;
-	moments        ?: MomentEntity[];
+	is_blocked?     : boolean;
+	password?       : string;
+	timer?          : number;
+	moments?        : MomentEntity[];
 }
 
 export interface MomentUserView {
@@ -97,6 +125,6 @@ export interface MomentUserView {
 }
 
 // Compatibilidad hacia atrás durante la migración
-export type MomentType = MomentTag;
-export type Memory = MomentEntity;
-export type Group = Relationship;
+export type MomentType  = MomentTag;
+export type Memory      = MomentEntity;
+export type Group       = Relationship;
