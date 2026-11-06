@@ -362,19 +362,19 @@
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div
 			onclick={() => { isObscured = false; }}
-			class="absolute inset-x-0 top-0 bottom-11.25 z-50 flex flex-col items-center justify-center p-5 bg-stone-950/98 backdrop-blur-3xl text-center text-white cursor-pointer select-none space-y-2"
+			class="absolute inset-x-0 top-0 bottom-11.25 z-50 flex flex-col items-center justify-center p-5 bg-white/95 dark:bg-stone-950/98 backdrop-blur-3xl text-center text-stone-900 dark:text-white cursor-pointer select-none space-y-2"
 		>
-			<div class="w-12 h-12 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30 animate-pulse shadow-xl">
+			<div class="w-12 h-12 rounded-xl bg-amber-500/20 text-amber-500 dark:text-amber-400 flex items-center justify-center border border-amber-500/30 animate-pulse shadow-xl">
 				<EyeOff size={ 22 } />
 			</div>
-			<div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-500/15 text-rose-300 text-[10px] font-extrabold uppercase tracking-widest border border-rose-500/25">
+			<div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-500/15 text-rose-600 dark:text-rose-300 text-[10px] font-extrabold uppercase tracking-widest border border-rose-500/25">
 				<span>Captura Bloqueada</span>
 			</div>
-			<h4 class="text-sm font-extrabold text-white">Protección de Privacidad Activa</h4>
-			<p class="text-[11px] text-stone-400 max-w-xs leading-relaxed">
+			<h4 class="text-sm font-extrabold text-stone-900 dark:text-white">Protección de Privacidad Activa</h4>
+			<p class="text-[11px] text-stone-500 dark:text-stone-400 max-w-xs leading-relaxed">
 				Por seguridad, este contenido confidencial se oculta automáticamente al detectar intentos de captura o pérdida de foco.
 			</p>
-			<span class="text-[10px] text-amber-400/80 font-semibold underline underline-offset-2">
+			<span class="text-[10px] text-amber-600 dark:text-amber-400/80 font-semibold underline underline-offset-2">
 				Haz clic para continuar viendo
 			</span>
 		</div>
@@ -396,18 +396,18 @@
 
 	<!-- Bloqueo por Contraseña -->
 	{#if moment.metadata?.password && !isUnlocked}
-		<div class="absolute inset-0 z-20 flex flex-col items-center justify-center p-6 text-center backdrop-blur-xl bg-stone-900/85 text-white">
-			<div class="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center mb-3">
+		<div class="absolute inset-0 z-20 flex flex-col items-center justify-center p-6 text-center backdrop-blur-xl bg-white/85 dark:bg-stone-900/85 text-stone-900 dark:text-white border border-stone-200/60 dark:border-white/10">
+			<div class="w-12 h-12 rounded-2xl bg-amber-500/15 dark:bg-amber-500/20 text-amber-500 dark:text-amber-400 flex items-center justify-center mb-3 border border-amber-500/25">
 				<Lock size={ 22 } />
 			</div>
-			<h4 class="text-sm font-bold">Momento Bloqueado</h4>
-			<p class="text-[11px] text-stone-400 max-w-xs mt-1 mb-4">
+			<h4 class="text-sm font-bold text-stone-900 dark:text-white">Momento Bloqueado</h4>
+			<p class="text-[11px] text-stone-500 dark:text-stone-400 max-w-xs mt-1 mb-4">
 				Ingresa la clave para visualizar el contenido protegido.
 			</p>
 			<button
 				type="button"
 				onclick={handleUnlockRequest}
-				class="px-4 py-2 rounded-xl bg-amber-500 text-stone-950 text-xs font-bold shadow-md hover:brightness-110 active:scale-95 transition-all"
+				class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 text-xs font-bold shadow-md hover:brightness-105 active:scale-95 transition-all cursor-pointer"
 			>
 				Desbloquear
 			</button>
