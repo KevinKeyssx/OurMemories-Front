@@ -11,12 +11,15 @@
         "lint": "tsc --noEmit"
     },
     "dependencies": {
+        "@atlaskit/pragmatic-drag-and-drop": "^4.0.0",
+        "@atlaskit/pragmatic-drag-and-drop-hitbox": "^3.0.0",
         "@internationalized/date": "^3.12.4",
         "@lucide/svelte": "^1.66.0",
         "@tailwindcss/vite": "^4.3.3",
         "@tanstack/svelte-query": "^6.3.6",
         "bits-ui": "^2.20.2",
         "dotenv": "^18.0.9",
+        "qr-code-styling": "^1.9.2",
         "svelte": "^5.57.3"
     },
     "devDependencies": {
