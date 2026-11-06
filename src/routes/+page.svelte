@@ -12,7 +12,7 @@
 <div class="min-h-screen flex flex-col justify-between p-6 md:p-12">
 	<header class="flex items-center justify-between max-w-6xl w-full mx-auto">
 		<div class="flex items-center gap-3">
-			<div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-brand-accent to-pink-500 flex items-center justify-center text-white shadow-lg shadow-brand-accent/30">
+			<div class="w-10 h-10 rounded-2xl bg-linear-to-tr from-brand-accent to-pink-500 flex items-center justify-center text-white shadow-lg shadow-brand-accent/30">
 				<Sparkles size={20} />
 			</div>
 			<span class="text-xl font-bold font-display tracking-tight">OurMemories</span>
@@ -58,7 +58,7 @@
 		<div class="flex flex-wrap items-center justify-center gap-4 pt-4">
 			<a
 				href={`/dashboard/${firstRelationPath}`}
-				class="inline-flex items-center gap-2 px-8 py-4 rounded-2xl bg-gradient-to-r from-brand-accent to-purple-600 text-white font-semibold shadow-xl shadow-brand-accent/25 hover:shadow-brand-accent/40 hover:scale-105 active:scale-95 transition-all text-base"
+				class="inline-flex items-center gap-2 px-8 py-4 rounded-2xl bg-linear-to-r from-brand-accent to-purple-600 text-white font-semibold shadow-xl shadow-brand-accent/25 hover:shadow-brand-accent/40 hover:scale-105 active:scale-95 transition-all text-base"
 			>
 				<span>Ir al Dashboard</span>
 				<ArrowRight size={18} />

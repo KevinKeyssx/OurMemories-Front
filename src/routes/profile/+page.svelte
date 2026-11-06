@@ -219,7 +219,7 @@
 						bind:value={sexId}
 						items={sexItems}
 						placeholder="Selecciona tu sexo"
-						class="!bg-stone-50 dark:!bg-white/5"
+						class="bg-stone-50! dark:bg-white/5!"
 					/>
 				</div>
 			</div>

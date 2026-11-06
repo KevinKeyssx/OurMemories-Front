@@ -29,7 +29,7 @@
 		</a>
 
 		<div class="flex items-center gap-3 mb-6">
-			<div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-brand-accent to-pink-500 flex items-center justify-center text-white shadow-lg shadow-brand-accent/25">
+			<div class="w-12 h-12 rounded-2xl bg-linear-to-tr from-brand-accent to-pink-500 flex items-center justify-center text-white shadow-lg shadow-brand-accent/25">
 				<Sparkles size={24} />
 			</div>
 			<div>
@@ -65,7 +65,7 @@
 
 			<button
 				type="submit"
-				class="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-brand-accent to-purple-600 text-white font-semibold flex items-center justify-center gap-2 shadow-lg shadow-brand-accent/25 hover:shadow-brand-accent/40 active:scale-[0.98] transition-all"
+				class="w-full py-3.5 px-6 rounded-2xl bg-linear-to-r from-brand-accent to-purple-600 text-white font-semibold flex items-center justify-center gap-2 shadow-lg shadow-brand-accent/25 hover:shadow-brand-accent/40 active:scale-[0.98] transition-all"
 			>
 				<KeyRound size={18} />
 				<span>Acceder</span>
