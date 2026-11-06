@@ -2,9 +2,11 @@
 	import type { Component } from 'svelte';
 
 	export interface TabItem {
-		id    : string;
-		label : string;
-		icon ?: Component;
+		id          : string;
+		label       : string;
+		icon       ?: Component;
+		badge      ?: string;
+		badgeClass ?: string;
 	}
 
 	export type TabSize = 'normal' | 'small';
@@ -61,7 +63,7 @@
 		{@const IconComp = tab.icon}
 		<button
 			type="button"
-			onclick={() => handleTabClick( tab.id )}
+			onclick={ () => handleTabClick( tab.id ) }
 			class="relative z-10 flex-1 flex items-center justify-center font-bold transition-colors duration-200 cursor-pointer { size === 'small' ? 'py-1 px-2.5 rounded-lg text-[11px] gap-1.5' : 'py-2.5 px-3 rounded-xl text-xs gap-2' } { isActive ? 'text-white' : 'text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200' }"
 		>
 			{#if IconComp}
@@ -71,6 +73,11 @@
 				/>
 			{/if}
 			<span>{ tab.label }</span>
+			{#if tab.badge}
+				<span class="text-[10px] px-2 py-0.5 rounded-full font-black transition-colors { tab.badgeClass || ( isActive ? 'bg-white/20 text-white' : 'bg-stone-200/60 dark:bg-white/10 text-stone-400' ) }">
+					{ tab.badge }
+				</span>
+			{/if}
 		</button>
 	{/each}
 </div>
