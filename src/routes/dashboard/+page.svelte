@@ -96,6 +96,11 @@
 		return rel?.path_name || 'pareja';
 	}
 
+	function getRelationshipColor( relId: string ): string {
+		const rel = relationshipsList.find( ( r: Relationship ) => r.id === relId );
+		return rel?.color || '#f43f5e';
+	}
+
 	function getMomentsCountForMemory( memoryId: string ): number {
 		return allMoments.filter( ( m: MomentEntity ) => m.memory_id === memoryId ).length;
 	}
@@ -274,9 +279,10 @@
 				{#each allMemories as memory (memory.id)}
 					<MemoryCard
 						{memory}
-						relationPath={getRelationshipPath( memory.relationship_id )}
-						momentsCount={getMomentsCountForMemory( memory.id )}
-						onUnlock={handleUnlockMemory}
+						relationPath={ getRelationshipPath( memory.relationship_id ) }
+						color={ getRelationshipColor( memory.relationship_id ) }
+						momentsCount={ getMomentsCountForMemory( memory.id ) }
+						onUnlock={ handleUnlockMemory }
 					/>
 				{/each}
 			</div>
