@@ -1,24 +1,12 @@
 <script lang="ts">
-	import type { Component } from 'svelte';
-	import { page } from '$app/state';
+	import type { Component }   from 'svelte';
+	import { page }             from '$app/state';
+	import { goto }             from '$app/navigation';
 
 	import {
 		Sparkles,
 		Award,
 		Heart,
-		Home,
-		Users,
-		Users2,
-		Baby,
-		Palmtree,
-		Grid,
-		Smile,
-		Camera,
-		Quote,
-		Video,
-		FileText,
-		Plus,
-		Settings2,
 		FolderHeart
 	} from '@lucide/svelte';
 
@@ -26,14 +14,18 @@
 	import MemoryCarousel                                    from '$lib/components/memories/MemoryCarousel.svelte';
 	import MomentList                                        from '$lib/components/moments/MomentList.svelte';
 	import SecurityUnlockModal                               from '$lib/components/shared/SecurityUnlockModal.svelte';
+	import ConfirmDialog                                     from '$lib/components/shared/ConfirmDialog.svelte';
+	import EditMemoryModal                                   from '$lib/components/memories/EditMemoryModal.svelte';
 	import UploadModal                                       from '$lib/components/UploadModal.svelte';
 	import { memoriesStore }                                 from '$lib/store.svelte';
 	import { useRelationshipsQuery }                         from '$lib/services/relationshipService';
 	import { RELATIONSHIP_ICON_MAP }                         from '$lib/components/shared/inputs/IconPicker.svelte';
 
-	const ICON_MAP: Record<string, Component> = RELATIONSHIP_ICON_MAP;
 
-	function isImageAvatar( avatar: string | undefined ): boolean {
+    const ICON_MAP: Record<string, Component> = RELATIONSHIP_ICON_MAP;
+
+
+    function isImageAvatar( avatar: string | undefined ): boolean {
 		if ( !avatar ) {
 			return false;
 		}
@@ -76,10 +68,32 @@
 	const currentLevelProgress = $derived<number>( points % 100 );
 	const pointsRemaining      = $derived<number>( 100 - currentLevelProgress );
 
-	// Modales de desbloqueo y creación rápida
-	let isCreateMemoryOpen = $state<boolean>( false );
-	let unlockTarget = $state<{ type: 'memory' | 'moment'; item: MemoryEntity | MomentEntity } | null>( null );
-	let isUnlockOpen = $state<boolean>( false );
+	// Modales de desbloqueo, edición, confirmación y creación rápida
+	let isCreateMemoryOpen        = $state<boolean>( false );
+	let editingMemory             = $state<MemoryEntity | null>( null );
+	let isEditMemoryOpen          = $state<boolean>( false );
+	let memoryToDelete            = $state<MemoryEntity | null>( null );
+	let isConfirmDeleteMemoryOpen = $state<boolean>( false );
+	let unlockTarget              = $state<{ type: 'memory' | 'moment'; item: MemoryEntity | MomentEntity } | null>( null );
+	let isUnlockOpen              = $state<boolean>( false );
+
+	function handleEditMemory( memory: MemoryEntity ): void {
+		editingMemory = memory;
+		isEditMemoryOpen = true;
+	}
+
+	function handleDeleteMemoryPrompt( memory: MemoryEntity ): void {
+		memoryToDelete = memory;
+		isConfirmDeleteMemoryOpen = true;
+	}
+
+	function handleConfirmDeleteMemory(): void {
+		if ( memoryToDelete ) {
+			memoriesStore.deleteMemory( memoryToDelete.id );
+		}
+		isConfirmDeleteMemoryOpen = false;
+		memoryToDelete = null;
+	}
 
 	function handleUnlockMemory( memory: MemoryEntity ): void {
 		unlockTarget = { type: 'memory', item: memory };
@@ -94,7 +108,9 @@
 	function handleUnlockSuccess(): void {
 		if ( unlockTarget ) {
 			if ( unlockTarget.type === 'memory' ) {
-				window.location.href = `/dashboard/${ pathName }/memory/${ unlockTarget.item.id }`;
+				const memory = unlockTarget.item as MemoryEntity;
+				memoriesStore.unlockMemory( memory.id, memory.timer );
+				goto( `/dashboard/${ pathName }/memory/${ memory.id }` );
 			} else {
 				const moment = unlockTarget.item as MomentEntity;
 				memoriesStore.unlockMoment( moment.id );
@@ -213,12 +229,14 @@
 
 	<!-- Sección 1: Carrusel / Grid de Memorias -->
 	<MemoryCarousel
-		memories={relationshipMemories}
-		relationPath={pathName}
-		moments={relationshipMoments}
-		color={currentRelationship?.color || '#f43f5e'}
-		onOpenCreate={() => ( isCreateMemoryOpen = true )}
-		onUnlockMemory={handleUnlockMemory}
+		memories={ relationshipMemories }
+		relationPath={ pathName }
+		moments={ relationshipMoments }
+		color={ currentRelationship?.color || '#f43f5e' }
+		onOpenCreate={ () => ( isCreateMemoryOpen = true ) }
+		onUnlockMemory={ handleUnlockMemory }
+		onEditMemory={ handleEditMemory }
+		onDeleteMemory={ handleDeleteMemoryPrompt }
 	/>
 
 	<!-- Separador Elegante -->
@@ -240,34 +258,60 @@
 		</div>
 
 		<MomentList
-			moments={relationshipMoments}
-			currentUserId={memoriesStore.currentUser.id}
-			relationName={currentRelationship?.name || 'esta relación'}
-			color={currentRelationship?.color || '#f43f5e'}
-			onDelete={handleDeleteMoment}
-			onUnlock={handleUnlockMoment}
-			onRecordView={handleRecordView}
+			moments={ relationshipMoments }
+			currentUserId={ memoriesStore.currentUser.id }
+			relationName={ currentRelationship?.name || 'esta relación' }
+			color={ currentRelationship?.color || '#f43f5e' }
+			onDelete={ handleDeleteMoment }
+			onUnlock={ handleUnlockMoment }
+			onRecordView={ handleRecordView }
 		/>
 	</div>
 </div>
 
 <!-- Modal para Desbloquear Contraseñas de Memorias o Momentos -->
 <SecurityUnlockModal
-	isOpen={isUnlockOpen}
-	title={unlockTarget?.type === 'memory' ? 'Memoria Protegida' : 'Momento Protegido'}
+	isOpen={ isUnlockOpen }
+	title={ unlockTarget?.type === 'memory' ? 'Memoria Protegida' : 'Momento Protegido' }
 	description="Ingresa la contraseña para desbloquear y revelar el contenido."
-	correctPassword={unlockTarget?.type === 'memory' ? ( unlockTarget.item as MemoryEntity ).password : ( ( unlockTarget?.item as MomentEntity )?.metadata?.password || '' )}
-	onSuccess={handleUnlockSuccess}
-	onClose={() => {
+	correctPassword={ unlockTarget?.type === 'memory' ? ( unlockTarget.item as MemoryEntity ).password : ( ( unlockTarget?.item as MomentEntity )?.metadata?.password || '' ) }
+	onSuccess={ handleUnlockSuccess }
+	onClose={ () => {
 		isUnlockOpen = false;
 		unlockTarget = null;
-	}}
+	} }
+/>
+
+<!-- Modal de Confirmación para Eliminar Memoria (Advertencia de Borrado en Cascada) -->
+<ConfirmDialog
+	isOpen={ isConfirmDeleteMemoryOpen }
+	title="¿Eliminar esta memoria y su contenido?"
+	description={ `¿Estás seguro de que deseas eliminar permanentemente la memoria "${ memoryToDelete?.title || '' }"? Al eliminarla, se eliminarán definitivamente TODOS los momentos, dedicatorias y fotos asociados a ella. Esta acción no se puede deshacer.` }
+	confirmText="Sí, eliminar todo"
+	cancelText="Cancelar"
+	variant="danger"
+	onConfirm={ handleConfirmDeleteMemory }
+	onClose={ () => {
+		isConfirmDeleteMemoryOpen = false;
+		memoryToDelete = null;
+	} }
+/>
+
+<!-- Modal Independiente para Editar Memoria -->
+<EditMemoryModal
+	isOpen={ isEditMemoryOpen }
+	memory={ editingMemory }
+	color={ currentRelationship?.color }
+	onClose={ () => {
+		isEditMemoryOpen = false;
+		editingMemory = null;
+	} }
 />
 
 <!-- Modal para Crear Memoria Directamente -->
 <UploadModal
-	isOpen={isCreateMemoryOpen}
-	relationshipId={currentRelationship?.id}
+	isOpen={ isCreateMemoryOpen }
+	relationshipId={ currentRelationship?.id }
 	initialTab="memory"
-	onClose={() => ( isCreateMemoryOpen = false )}
+	onClose={ () => ( isCreateMemoryOpen = false ) }
 />
