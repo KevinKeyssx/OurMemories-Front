@@ -1,23 +1,26 @@
 <script lang="ts">
-	import type { Component }   from 'svelte';
-	import { fade, fly }        from 'svelte/transition';
-
+	import type { Component } from 'svelte';
+	import { fade, fly } from 'svelte/transition';
 	import {
 		Heart,
 		Home,
 		Settings2,
 		X
-	}                   from '@lucide/svelte';
-	import { Tooltip }  from 'bits-ui';
+	} from '@lucide/svelte';
+	import { Tooltip } from 'bits-ui';
 
+	import type { Relationship } from '$lib/types';
+	import RelationshipCard from './RelationshipCard.svelte';
+	import ManageRelationshipModal from './ManageRelationshipModal.svelte';
+	import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte';
+	import { RELATIONSHIP_ICON_MAP } from '$lib/components/shared/inputs/IconPicker.svelte';
+	import { memoriesStore } from '$lib/store.svelte';
+	import { useQueryClient } from '@tanstack/svelte-query';
+	import { RELATIONSHIPS_QUERY_KEY } from '$lib/services/relationshipService';
+	import { monitorForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
+	import { extractClosestEdge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge';
 
-	import type { Relationship }        from '$lib/types';
-	import RelationshipCard             from './RelationshipCard.svelte';
-	import { RELATIONSHIP_ICON_MAP }    from '$lib/components/shared/inputs/IconPicker.svelte';
-	import { memoriesStore }            from '$lib/store.svelte';
-
-
-    interface Props {
+	interface Props {
 		relationships        : Relationship[];
 		activeRelationshipId : string;
 		isLoading            : boolean;
@@ -37,11 +40,55 @@
 
 	const ICON_MAP: Record<string, Component> = RELATIONSHIP_ICON_MAP;
 
+	const queryClient = useQueryClient();
+
+	let selectedRelForManage      = $state<Relationship | null>( null );
+	let isManageModalOpen         = $state<boolean>( false );
+	let manageModalTab            = $state<'relacion' | 'roles' | 'invitar' | 'historial'>( 'relacion' );
+	let relationshipToDelete      = $state<Relationship | null>( null );
+	let isConfirmDeleteOpen       = $state<boolean>( false );
+
+	const currentRelationships = $derived<Relationship[]>(
+		memoriesStore.groups.length > 0 ? memoriesStore.groups : relationships
+	);
+
 	const sortedRelationships = $derived<Relationship[]>(
-		[ ...relationships ].sort( ( a: Relationship, b: Relationship ) => {
+		[ ...currentRelationships ].sort( ( a: Relationship, b: Relationship ) => {
+			const orderA = typeof a.order === 'number' ? a.order : 0;
+			const orderB = typeof b.order === 'number' ? b.order : 0;
+			if ( orderA !== orderB ) {
+				return orderA - orderB;
+			}
 			return new Date( a.created_at ).getTime() - new Date( b.created_at ).getTime();
 		} )
 	);
+
+	$effect( () => {
+		const cleanMonitor = monitorForElements( {
+			canMonitor : ( { source } ) => source.data.type === 'relationship',
+			onDrop : ( { source, location } ) => {
+				const target = location.current.dropTargets[ 0 ];
+				if ( !target ) {
+					return;
+				}
+
+				const sourceId = source.data.id as string;
+				const targetId = target.data.id as string;
+				const edge = extractClosestEdge( target.data );
+
+				if ( !sourceId || !targetId || sourceId === targetId ) {
+					return;
+				}
+
+				memoriesStore.reorderRelationships( sourceId, targetId, edge || 'bottom' );
+				queryClient.setQueryData( RELATIONSHIPS_QUERY_KEY, memoriesStore.groups );
+			}
+		} );
+
+		return () => {
+			cleanMonitor();
+		};
+	} );
 
 	const isImageAvatar = ( avatar: string | undefined ): boolean => {
 		if ( !avatar ) {
@@ -52,10 +99,29 @@
 	};
 
 	const isHomeActive = $derived<boolean>( !activeRelationshipId );
+
+	function handleOpenManage( rel: Relationship, tab: 'relacion' | 'roles' | 'invitar' | 'historial' = 'relacion' ): void {
+		selectedRelForManage = rel;
+		manageModalTab = tab;
+		isManageModalOpen = true;
+	}
+
+	function handleDeletePrompt( rel: Relationship ): void {
+		relationshipToDelete = rel;
+		isConfirmDeleteOpen = true;
+	}
+
+	function handleConfirmDelete(): void {
+		if ( relationshipToDelete ) {
+			memoriesStore.deleteRelationship( relationshipToDelete.id );
+		}
+		isConfirmDeleteOpen = false;
+		relationshipToDelete = null;
+	}
 </script>
 
 <!-- Barra Lateral Fija para Escritorio (Desktop Sidebar) -->
-<aside class="hidden lg:flex fixed left-0 top-0 bottom-0 w-20 flex-col items-center py-10 border-r border-stone-200/50 dark:border-white/5 bg-white/80 dark:bg-dark-card/80 backdrop-blur-md z-40 transition-colors duration-500 overflow-hidden select-none">
+<aside class="hidden lg:flex fixed left-0 top-0 bottom-0 w-20 flex-col items-center py-10 border-r border-stone-200/50 dark:border-white/5 bg-white/80 dark:bg-dark-card/80 backdrop-blur-md z-40 transition-colors duration-200 overflow-hidden select-none">
 	<!-- Botón Superior Home / Dashboard Principal -->
 	<a
 		href="/dashboard"
@@ -74,13 +140,15 @@
 			{/each}
 		</div>
 	{:else}
-		<!-- Navegación de Relaciones con Tooltips Bits UI -->
+		<!-- Navegación de Relaciones con Tooltips y Menú Contextual Bits UI -->
 		<Tooltip.Provider>
 			<nav class="flex flex-col gap-4 items-center w-full px-2 overflow-y-auto overflow-x-hidden no-scrollbar pt-0 pb-6 flex-1">
 				{#each sortedRelationships as rel (rel.id)}
 					<RelationshipCard
 						relationship={ rel }
 						isActive={ rel.id === activeRelationshipId }
+						onOpenManage={ handleOpenManage }
+						onDeleteRelationship={ handleDeletePrompt }
 					/>
 				{/each}
 			</nav>
@@ -94,7 +162,7 @@
 		<div class="flex flex-col items-center shrink-0">
 			<button
 				type="button"
-				onclick={onOpenGroupEditor}
+				onclick={ onOpenGroupEditor }
 				class="w-12 h-12 flex items-center justify-center text-stone-500 dark:text-stone-400 hover:text-brand-secondary dark:hover:text-brand-secondary transition-all hover:scale-110 rounded-xl hover:bg-stone-100 dark:hover:bg-white/5 active:scale-95 cursor-pointer"
 				title="Configurar relaciones"
 				aria-label="Configurar relaciones"
@@ -113,7 +181,7 @@
 		<div
 			transition:fade={ { duration: 250 } }
 			class="fixed inset-0 bg-stone-950/60 backdrop-blur-sm"
-			onclick={onCloseMobile}
+			onclick={ onCloseMobile }
 		></div>
 
 		<div
@@ -125,7 +193,7 @@
 					<div class="flex items-center gap-2.5">
 						<a
 							href="/dashboard"
-							onclick={onCloseMobile}
+							onclick={ onCloseMobile }
 							class="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-md bg-linear-to-tr from-brand-accent to-pink-500 shadow-brand-accent/25 hover:scale-105 active:scale-95 transition-all shrink-0 { isHomeActive ? 'ring-2 ring-brand-accent' : '' }"
 							title="Ir al Dashboard Principal"
 							aria-label="Ir al Dashboard Principal"
@@ -140,7 +208,7 @@
 
 					<button
 						type="button"
-						onclick={onCloseMobile}
+						onclick={ onCloseMobile }
 						class="p-1.5 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 rounded-lg hover:bg-stone-100 dark:hover:bg-white/5 transition-colors"
 						aria-label="Cerrar menú"
 					>
@@ -158,13 +226,15 @@
 							{@const IconComp = ICON_MAP[ rel.avatar ] || Heart}
 							{@const isActive = rel.id === activeRelationshipId}
 							{@const isImage = isImageAvatar( rel.avatar )}
-							<a
-								href={`/dashboard/${ rel.path_name }`}
-								onclick={onCloseMobile}
+							<div
 								class="group flex items-center justify-between px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all duration-300 { isActive ? 'shadow-md scale-[1.02]' : 'text-stone-500 hover:bg-stone-100/70 dark:hover:bg-white/5 hover:text-stone-800 dark:hover:text-stone-200' }"
 								style={ isActive ? `background: linear-gradient(90deg, ${ rel.color }22 0%, ${ rel.color }08 100%); border-left: 4px solid ${ rel.color }; box-shadow: 0 4px 20px -4px ${ rel.color }33; color: ${ rel.color };` : '' }
 							>
-								<div class="flex items-center gap-3">
+								<a
+									href={`/dashboard/${ rel.path_name }`}
+									onclick={ onCloseMobile }
+									class="flex items-center gap-3 flex-1 min-w-0"
+								>
 									<div
 										class="w-8 h-8 rounded-xl flex items-center justify-center transition-all shrink-0 overflow-hidden"
 										style={ isActive ? `box-shadow: 0 0 0 1.5px ${ rel.color }, 0 2px 8px ${ rel.color }44;` : 'background: rgba(120, 120, 120, 0.1);' }
@@ -182,16 +252,32 @@
 											/>
 										{/if}
 									</div>
-									<span class="font-bold">{ rel.name }</span>
-								</div>
+									<span class="font-bold truncate">{ rel.name }</span>
+								</a>
 
-								{#if isActive}
-									<div
-										class="w-2 h-2 rounded-full"
-										style="background-color: { rel.color }; box-shadow: 0 0 8px { rel.color };"
-									></div>
-								{/if}
-							</a>
+								<div class="flex items-center gap-1.5 shrink-0">
+									<button
+										type="button"
+										onclick={( e: MouseEvent ) => {
+											e.preventDefault();
+											e.stopPropagation();
+											handleOpenManage( rel, 'relacion' );
+										}}
+										class="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-200/60 dark:hover:bg-white/10 transition-colors cursor-pointer"
+										title="Gestionar relación"
+										aria-label="Gestionar relación"
+									>
+										<Settings2 size={ 16 } />
+									</button>
+
+									{#if isActive}
+										<div
+											class="w-2 h-2 rounded-full"
+											style="background-color: { rel.color }; box-shadow: 0 0 8px { rel.color };"
+										></div>
+									{/if}
+								</div>
+							</div>
 						{/each}
 					{/if}
 				</nav>
@@ -218,3 +304,30 @@
 	</div>
 {/if}
 
+<!-- Modal de Gestión Completa con 3 pestañas: Relación | Roles | Invitar -->
+{#if selectedRelForManage}
+	<ManageRelationshipModal
+		isOpen={ isManageModalOpen }
+		relationship={ selectedRelForManage }
+		initialTab={ manageModalTab }
+		onClose={() => {
+			isManageModalOpen = false;
+			selectedRelForManage = null;
+		}}
+	/>
+{/if}
+
+<!-- Diálogo de Confirmación para Eliminar Relación -->
+<ConfirmDialog
+	isOpen={ isConfirmDeleteOpen }
+	title={`¿Eliminar "${ relationshipToDelete?.name }"?`}
+	description="Esta acción eliminará de forma permanente este espacio, incluyendo todas sus memorias y momentos vinculados."
+	confirmText="Sí, eliminar relación"
+	cancelText="Cancelar"
+	variant="danger"
+	onConfirm={ handleConfirmDelete }
+	onClose={() => {
+		isConfirmDeleteOpen = false;
+		relationshipToDelete = null;
+	}}
+/>
