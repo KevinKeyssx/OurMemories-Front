@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { onDestroy } from 'svelte';
-    import type { Component } from 'svelte';
+	import { onDestroy }        from 'svelte';
+	import type { Component }   from 'svelte';
 
-    import {
+	import {
 		Trash2,
 		Heart,
 		Quote as QuoteIcon,
@@ -16,33 +16,37 @@
 		User as UserIcon,
 		Edit3,
 		RotateCcw,
-		EyeOff
+		EyeOff,
+		Maximize2
 	} from '@lucide/svelte';
-	import type {
-        MomentEntity,
-        MomentTag
-    }                               from '$lib/types';
+
+    import type {
+		MomentEntity,
+		MomentTag
+	} from '$lib/types';
 	import MomentEphemeralCover     from './MomentEphemeralCover.svelte';
 	import SecureEphemeralMedia     from './SecureEphemeralMedia.svelte';
+	import MomentCountdownProgress  from './MomentCountdownProgress.svelte';
+	import MomentDetailModal        from './MomentDetailModal.svelte';
 	import Tooltip                  from '$lib/components/shared/Tooltip.svelte';
 	import { formatCaptureDate }    from '$lib/utils/date';
 	import { memoriesStore }        from '$lib/store.svelte';
 
-
-    interface Props {
-		moment        : MomentEntity;
-		currentUserId : string;
-		isViewed     ?: boolean;
-		onDelete     ?: ( id: string ) => void;
-		onEdit       ?: ( moment: MomentEntity ) => void;
-		onUnlock     ?: ( moment: MomentEntity ) => void;
-		onRecordView ?: ( momentId: string ) => void;
+	interface Props {
+		moment         : MomentEntity;
+		currentUserId  : string;
+		relationColor ?: string;
+		isViewed      ?: boolean;
+		onDelete      ?: ( id: string ) => void;
+		onEdit        ?: ( moment: MomentEntity ) => void;
+		onUnlock      ?: ( moment: MomentEntity ) => void;
+		onRecordView  ?: ( momentId: string ) => void;
 	}
 
-
-    let {
+	let {
 		moment,
 		currentUserId,
+		relationColor = '#f43f5e',
 		isViewed = false,
 		onDelete,
 		onEdit,
@@ -55,11 +59,13 @@
 	let isHolding              = $state<boolean>( false );
 	let isLocalReplayActive    = $state<boolean>( false );
 	let remainingMs            = $state<number | null>( null );
-	let animFrameId            = $state<number | null>( null );
-	let lastTimestamp          = $state<number | null>( null );
 	let isObscured             = $state<boolean>( false );
+	let isViewerOpen           = $state<boolean>( false );
 	let passwordSecondsLeft    = $state<number | undefined>( undefined );
 	let passwordTimerInterval  = $state<ReturnType<typeof setInterval> | null>( null );
+
+    let animFrameId: number | null   = null;
+	let lastTimestamp: number | null = null;
 
 	const isUnlocked        = $derived<boolean>( !moment.metadata?.password || isManuallyUnlocked || memoriesStore.isMomentUnlocked( moment.id ) );
 	const isCreator         = $derived<boolean>( Boolean( moment.created_by && moment.created_by === currentUserId ) );
@@ -195,6 +201,9 @@
 	}
 
 	function handleCardWindowBlur(): void {
+		if ( isViewerOpen ) {
+			return;
+		}
 		if ( moment.metadata?.is_temporal && ( isEphemeralRevealed || isHolding ) ) {
 			isObscured = true;
 			handleStopHolding();
@@ -208,33 +217,42 @@
 	}
 
 	function handleCardVisibilityChange(): void {
+		if ( isViewerOpen ) {
+			return;
+		}
 		if ( moment.metadata?.is_temporal && document.hidden ) {
-			isObscured = true;
-			handleStopHolding();
+			if ( isEphemeralRevealed || isHolding ) {
+				isObscured = true;
+				handleStopHolding();
+			}
 		} else if ( moment.metadata?.is_temporal && !document.hidden ) {
 			isObscured = false;
 		}
 	}
 
 	function handleCardKeyCapture( e: KeyboardEvent ): void {
-		if ( !moment.metadata?.is_temporal ) {
+		if ( !moment.metadata?.is_temporal || isViewerOpen ) {
 			return;
 		}
 
-		// Detección y bloqueo reactivo de captura de pantalla y pérdida de foco
+		// Solo interceptar si el usuario está activamente viendo el contenido en la tarjeta
+		if ( !isHolding && !isEphemeralRevealed ) {
+			return;
+		}
+
+		// Ignorar si el usuario está escribiendo en un input, textarea o modal de contraseña
+		const target = e.target as HTMLElement | null;
+		if ( target && ( target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable ) ) {
+			return;
+		}
+
+		// Detección y bloqueo reactivo de captura de pantalla
 		const isCaptureOrModifierKey =
 			e.key === 'PrintScreen' ||
 			e.code === 'PrintScreen' ||
 			e.keyCode === 44 ||
-			e.key === 'Shift' ||
-			e.key === 'Control' ||
-			e.key === 'Alt' ||
-			e.key === 'Meta' ||
-			e.key === 'F12' ||
-			e.shiftKey ||
-			e.ctrlKey ||
-			e.altKey ||
-			e.metaKey;
+			( ( e.ctrlKey || e.metaKey ) && ( e.key === 'p' || e.key === 'P' || e.key === 's' || e.key === 'S' ) ) ||
+			( e.shiftKey && ( e.metaKey || ( e.ctrlKey && ( e.key === 's' || e.key === 'S' ) ) ) );
 
 		if ( isCaptureOrModifierKey ) {
 			isObscured = true;
@@ -300,19 +318,73 @@
 		}
 	}
 
-	function getTagBadge( tag: MomentTag ): { label: string; icon: Component } {
+	function getTagBadge( tag: MomentTag ): { label: string; icon: Component; colorClass: string } {
 		switch ( tag ) {
 			case 'image':
-				return { label: 'Foto', icon: ImageIcon as Component };
+				return {
+					label      : 'Foto',
+					icon       : ImageIcon as Component,
+					colorClass : 'text-sky-600 dark:text-sky-400 bg-sky-500/10 border-sky-500/25'
+				};
 			case 'video':
-				return { label: 'Video', icon: VideoIcon as Component };
+				return {
+					label      : 'Video',
+					icon       : VideoIcon as Component,
+					colorClass : 'text-purple-600 dark:text-purple-400 bg-purple-500/10 border-purple-500/25'
+				};
 			case 'text':
-				return { label: 'Texto', icon: FileText as Component };
+				return {
+					label      : 'Texto',
+					icon       : FileText as Component,
+					colorClass : 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/25'
+				};
 			case 'quote':
-				return { label: 'Dedicatoria', icon: QuoteIcon as Component };
+				return {
+					label      : 'Dedicatoria',
+					icon       : QuoteIcon as Component,
+					colorClass : 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/25'
+				};
 			default:
-				return { label: 'Recuerdo', icon: Heart as Component };
+				return {
+					label      : 'Recuerdo',
+					icon       : Heart as Component,
+					colorClass : 'text-rose-600 dark:text-rose-400 bg-rose-500/10 border-rose-500/25'
+				};
 		}
+	}
+
+	function handleOpenViewer( e?: MouseEvent ): void {
+		if ( e ) {
+			e.stopPropagation();
+		}
+		if ( moment.metadata?.password && !isUnlocked ) {
+			handleUnlockRequest();
+			return;
+		}
+		isObscured = false;
+		if ( isHolding ) {
+			handleStopHolding();
+		}
+		isViewerOpen = true;
+	}
+
+	function handleCardContentClick( e: MouseEvent ): void {
+		if ( isObscured || shouldShowEphemeralCover ) {
+			return;
+		}
+		if ( moment.metadata?.password && !isUnlocked ) {
+			handleUnlockRequest();
+			return;
+		}
+		const target = e.target as HTMLElement;
+		if ( target.closest( 'button' ) || target.closest( 'video' ) ) {
+			return;
+		}
+		isObscured = false;
+		if ( isHolding ) {
+			handleStopHolding();
+		}
+		isViewerOpen = true;
 	}
 </script>
 
@@ -414,8 +486,13 @@
 		</div>
 	{/if}
 
-	<!-- Contenido del Momento -->
-	<div class="relative z-10 p-2">
+	<!-- Contenido del Momento (Clickeable para ver en pantalla completa) -->
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div
+		onclick={ handleCardContentClick }
+		class="relative z-10 p-2 cursor-pointer"
+	>
 		<!-- Imagen / Video Multimedia -->
 		{#if moment.metadata?.imageUrl}
 			<div class="aspect-4/5 overflow-hidden rounded-2xl relative shadow-inner mb-3">
@@ -458,6 +535,10 @@
 						src={ moment.metadata.videoUrl }
 						controls
 						class="w-full h-full object-cover"
+                        autoplay={ true }
+                        muted={ true }
+                        playsinline
+                        loop={ true }
 					></video>
 				{/if}
 			</div>
@@ -465,19 +546,19 @@
 
 		<!-- Texto / Contenido y Título -->
 		<div class="p-3 space-y-2 { moment.metadata?.is_temporal ? 'select-none' : '' } { !hasMedia && isEphemeralRevealed ? 'pb-24' : '' }">
-			<!-- Tags automáticos generados -->
+			<!-- Tags automáticos con colores semánticos vibrantes -->
 			<div class="flex flex-wrap items-center gap-1.5">
 				{#each moment.tags as tag}
 					{@const badge = getTagBadge( tag )}
 					{@const TagIcon = badge.icon}
-					<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-stone-100 dark:bg-white/5 text-stone-600 dark:text-stone-300 border border-stone-200/50 dark:border-white/5">
+					<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border shadow-2xs { badge.colorClass }">
 						<TagIcon size={ 10 } />
 						<span>{ badge.label }</span>
 					</span>
 				{/each}
 
 				{#if moment.metadata?.is_temporal}
-					<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-500 border border-rose-500/20">
+					<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-500 border border-rose-500/20 shadow-2xs">
 						<Flame size={ 10 } />
 						<span>Efímero</span>
 					</span>
@@ -485,7 +566,10 @@
 			</div>
 
 			{#if moment.title}
-				<h4 class="text-sm font-extrabold text-stone-800 dark:text-stone-100 line-clamp-1">
+				<h4
+					class="text-sm font-extrabold line-clamp-1 transition-colors"
+					style="color: { relationColor };"
+				>
 					{ moment.title }
 				</h4>
 			{/if}
@@ -500,26 +584,16 @@
 
 	<!-- Línea de cuenta regresiva con efecto de mecha/fuego quemándose -->
 	{#if moment.metadata?.is_temporal && !effectiveIsViewed && secondsLeft > 0}
-		<div class="relative z-40 w-full h-1.5 bg-black/40 overflow-visible mt-auto mb-1 { isEphemeralRevealed && isHolding ? 'opacity-100' : 'opacity-75' }">
-			<!-- Pista brillante que se va consumiendo hacia la izquierda sincronizada 1:1 con el contador -->
-			<div
-				class="h-full relative rounded-r-full shadow-[0_0_12px_rgba(249,115,22,0.85),0_0_4px_rgba(254,240,138,1)] transition-[width] duration-75 ease-linear"
-				style="width: { progressPercent }%; background: linear-gradient(90deg, #dc2626 0%, #ea580c 45%, #f59e0b 80%, #fef08a 100%);"
-			>
-				<!-- Punta incandescente / Chispa de fuego en el extremo que se va consumiendo -->
-				<div class="absolute -top-1.5 -right-2 size-4.5 rounded-full flex items-center justify-center pointer-events-none z-50">
-					<!-- Halo pulsante de combustión -->
-					<span class="absolute inset-0 rounded-full bg-orange-500/80 blur-xs animate-ping"></span>
-					<!-- Resplandor ardiente -->
-					<span class="absolute -inset-1 rounded-full bg-amber-400/60 blur-xs"></span>
-					<!-- Núcleo incandescente al rojo vivo -->
-					<span class="relative size-3.5 rounded-full bg-white shadow-[0_0_10px_3px_#f97316,0_0_18px_6px_#ef4444] border-2 border-amber-300"></span>
-				</div>
-			</div>
+		<div class="relative z-40 w-full px-1 mt-auto mb-1 { isEphemeralRevealed && isHolding ? 'opacity-100' : 'opacity-75' }">
+			<MomentCountdownProgress
+				{secondsLeft}
+				{progressPercent}
+				showBadge={ false }
+			/>
 		</div>
 	{/if}
 
-	<!-- Pie de Tarjeta ( Autor, Fecha y Acciones del Creador ) -->
+	<!-- Pie de Tarjeta ( Autor, Fecha y Acciones ) -->
 	<div
 		class="relative z-30 px-3.5 py-2.5 flex items-center justify-between text-[11px] { moment.metadata?.is_temporal && !effectiveIsViewed && secondsLeft > 0 ? '' : 'mt-auto' } border-t transition-colors { hasCustomBg ? 'bg-black/5 dark:bg-black/20 backdrop-blur-md' : 'bg-stone-50/70 dark:bg-white/3 backdrop-blur-md border-stone-200/50 dark:border-white/5' }"
 		style={ hasCustomBg ? `border-color: ${ customBgColor }26;` : '' }
@@ -538,48 +612,72 @@
 			{/if}
 		</div>
 
-		<!-- Botones de Acción (Super Admin o Creador) -->
-		{#if canReplay || canEdit || canDelete}
-			<div class="flex items-center gap-1 shrink-0">
-				{#if canReplay}
-					<Tooltip text="Volver a ver momento efímero" side="top" sideOffset={ 6 }>
-						<button
-							type="button"
-							onclick={handleSuperAdminReplay}
-							class="size-7 rounded-xl flex items-center justify-center bg-amber-500/15 text-amber-500 dark:text-amber-400 hover:bg-amber-500/25 border border-amber-500/30 transition-all active:scale-90 cursor-pointer shadow-2xs"
-							aria-label="Volver a ver momento efímero"
-						>
-							<RotateCcw size={ 13 } />
-						</button>
-					</Tooltip>
-				{/if}
+		<!-- Botones de Acción -->
+		<div class="flex items-center gap-1 shrink-0">
+			<!-- Botón para ver y abrir el momento en pantalla completa por Dialog -->
+			{#if !effectiveIsViewed}
+				<Tooltip text={ !isUnlocked && moment.metadata?.password ? 'Desbloquear y ver en pantalla completa' : 'Ver en pantalla completa' } side="top" sideOffset={ 6 }>
+					<button
+						type="button"
+						onclick={ handleOpenViewer }
+						class="size-7 rounded-xl flex items-center justify-center bg-stone-100/90 dark:bg-white/10 hover:bg-stone-200 dark:hover:bg-white/20 text-stone-700 dark:text-stone-200 hover:text-stone-900 dark:hover:text-white border border-stone-200/70 dark:border-white/10 transition-all active:scale-90 cursor-pointer shadow-2xs"
+						aria-label="Ver momento en pantalla completa"
+					>
+						<Maximize2 size={ 13 } />
+					</button>
+				</Tooltip>
+			{/if}
 
-				{#if canEdit && onEdit}
-					<Tooltip text="Editar momento" side="top" sideOffset={ 6 }>
-						<button
-							type="button"
-							onclick={() => onEdit && onEdit( moment )}
-							class="size-7 rounded-xl flex items-center justify-center bg-stone-100/90 dark:bg-white/10 hover:bg-amber-500/15 text-stone-700 dark:text-stone-200 hover:text-amber-500 dark:hover:text-amber-400 border border-stone-200/70 dark:border-white/10 transition-all active:scale-90 cursor-pointer shadow-2xs"
-							aria-label="Editar momento"
-						>
-							<Edit3 size={ 13 } />
-						</button>
-					</Tooltip>
-				{/if}
+			{#if canReplay}
+				<Tooltip text="Volver a ver momento efímero" side="top" sideOffset={ 6 }>
+					<button
+						type="button"
+						onclick={handleSuperAdminReplay}
+						class="size-7 rounded-xl flex items-center justify-center bg-amber-500/15 text-amber-500 dark:text-amber-400 hover:bg-amber-500/25 border border-amber-500/30 transition-all active:scale-90 cursor-pointer shadow-2xs"
+						aria-label="Volver a ver momento efímero"
+					>
+						<RotateCcw size={ 13 } />
+					</button>
+				</Tooltip>
+			{/if}
 
-				{#if canDelete && onDelete}
-					<Tooltip text="Eliminar momento" side="top" sideOffset={ 6 }>
-						<button
-							type="button"
-							onclick={() => onDelete && onDelete( moment.id )}
-							class="size-7 rounded-xl flex items-center justify-center bg-stone-100/90 dark:bg-white/10 hover:bg-rose-500/15 text-stone-700 dark:text-stone-200 hover:text-rose-500 dark:hover:text-rose-400 border border-stone-200/70 dark:border-white/10 transition-all active:scale-90 cursor-pointer shadow-2xs"
-							aria-label="Eliminar momento"
-						>
-							<Trash2 size={ 13 } />
-						</button>
-					</Tooltip>
-				{/if}
-			</div>
-		{/if}
+			{#if canEdit && onEdit}
+				<Tooltip text="Editar momento" side="top" sideOffset={ 6 }>
+					<button
+						type="button"
+						onclick={() => onEdit && onEdit( moment )}
+						class="size-7 rounded-xl flex items-center justify-center bg-stone-100/90 dark:bg-white/10 hover:bg-amber-500/15 text-stone-700 dark:text-stone-200 hover:text-amber-500 dark:hover:text-amber-400 border border-stone-200/70 dark:border-white/10 transition-all active:scale-90 cursor-pointer shadow-2xs"
+						aria-label="Editar momento"
+					>
+						<Edit3 size={ 13 } />
+					</button>
+				</Tooltip>
+			{/if}
+
+			{#if canDelete && onDelete}
+				<Tooltip text="Eliminar momento" side="top" sideOffset={ 6 }>
+					<button
+						type="button"
+						onclick={() => onDelete && onDelete( moment.id )}
+						class="size-7 rounded-xl flex items-center justify-center bg-stone-100/90 dark:bg-white/10 hover:bg-rose-500/15 text-stone-700 dark:text-stone-200 hover:text-rose-500 dark:hover:text-rose-400 border border-stone-200/70 dark:border-white/10 transition-all active:scale-90 cursor-pointer shadow-2xs"
+						aria-label="Eliminar momento"
+					>
+						<Trash2 size={ 13 } />
+					</button>
+				</Tooltip>
+			{/if}
+		</div>
 	</div>
 </div>
+
+<!-- Modal para ver el Momento en Pantalla Completa -->
+<MomentDetailModal
+	bind:open={ isViewerOpen }
+	{moment}
+	{relationColor}
+	{currentUserId}
+	isViewed={ effectiveIsViewed }
+	{onRecordView}
+	{onEdit}
+	{onDelete}
+/>
