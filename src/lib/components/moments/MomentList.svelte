@@ -236,6 +236,7 @@
 						<MomentCard
 							{moment}
 							{currentUserId}
+							relationColor={ color }
 							isViewed={memoriesStore.hasUserViewedMoment( moment.id, currentUserId )}
 							onEdit={handleRequestEdit}
 							onDelete={handleRequestDelete}
