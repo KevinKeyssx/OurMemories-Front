@@ -4,14 +4,16 @@
 	import type { Snippet } from 'svelte';
 
 	interface Props {
-		open         ?: boolean;
-		title        ?: string;
-		description  ?: string;
-		maxWidth     ?: string;
-		onClose      ?: () => void;
-		children      : Snippet;
-		headerExtra  ?: Snippet;
-		footer       ?: Snippet;
+		open          ?: boolean;
+		title         ?: string;
+		description   ?: string;
+		maxWidth      ?: string;
+		contentClass  ?: string;
+		contentStyle  ?: string;
+		onClose       ?: () => void;
+		children       : Snippet;
+		headerExtra   ?: Snippet;
+		footer        ?: Snippet;
 	}
 
 	let {
@@ -19,6 +21,8 @@
 		title,
 		description,
 		maxWidth = 'max-w-lg',
+		contentClass,
+		contentStyle,
 		onClose,
 		children,
 		headerExtra,
@@ -39,7 +43,8 @@
 			class="fixed inset-0 z-50 bg-stone-950/75 backdrop-blur-md animate-in fade-in-0 duration-200"
 		/>
 		<Dialog.Content
-			class="fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] { maxWidth } rounded-3xl bg-white dark:bg-dark-card border border-stone-200/70 dark:border-white/10 p-6 sm:p-7 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto no-scrollbar outline-hidden animate-in fade-in-0 zoom-in-95 duration-200"
+			class="fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] { maxWidth } rounded-3xl p-6 sm:p-7 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto no-scrollbar outline-hidden animate-in fade-in-0 zoom-in-95 duration-200 { contentClass ? contentClass : ( contentStyle ? 'backdrop-blur-2xl' : 'bg-white dark:bg-dark-card border border-stone-200/70 dark:border-white/10' ) }"
+			style={ contentStyle }
 		>
 			<!-- Cabecera del Diálogo -->
 			{#if title || description || headerExtra}
