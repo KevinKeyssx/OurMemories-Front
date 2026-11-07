@@ -24,14 +24,9 @@
 
 	$effect( () => {
 		if ( typeof document !== 'undefined' ) {
-			const root = document.documentElement;
-			if ( memoriesStore.theme === 'dark' ) {
-				root.classList.add( 'dark' );
-				root.classList.remove( 'light' );
-			} else {
-				root.classList.add( 'light' );
-				root.classList.remove( 'dark' );
-			}
+			const isDark = memoriesStore.theme === 'dark';
+			document.documentElement.classList.toggle( 'dark', isDark );
+			document.documentElement.classList.toggle( 'light', !isDark );
 		}
 	} );
 </script>
