@@ -236,6 +236,9 @@
 				disablePictureInPicture={ true }
 				playsinline
 				oncontextmenu={( e ) => e.preventDefault()}
+                loop={ true }
+                muted={ false }
+                autoplay={ true }
 			></video>
 		{/if}
 
@@ -271,6 +274,9 @@
 				class="w-full h-full object-cover"
 				controls
 				playsinline
+                loop={ true }
+                muted={ false }
+                autoplay={ true }
 			></video>
 		{/if}
 	{/if}
