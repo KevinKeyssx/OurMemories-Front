@@ -13,39 +13,27 @@
 		Check
 	} from '@lucide/svelte';
 
-	import type { Sex } from '$lib/types';
-	import { memoriesStore } from '$lib/store.svelte';
-	import { INITIAL_SEXES } from '$lib/data';
-	import Select, { type SelectItem } from '$lib/components/shared/inputs/Select.svelte';
+	import Select, {
+        type SelectItem
+    }                           from '$lib/components/shared/inputs/Select.svelte';
+	import type { Sex }         from '$lib/types';
+	import { memoriesStore }    from '$lib/store.svelte';
+	import { INITIAL_SEXES }    from '$lib/data';
 
 
     const currentUser = $derived( memoriesStore.currentUser );
 
+	let name         = $state<string>( memoriesStore.currentUser.name );
+	let lastName     = $state<string>( memoriesStore.currentUser.last_name );
+	let email        = $state<string>( memoriesStore.currentUser.email );
+	let phone        = $state<string>( memoriesStore.currentUser.phone );
+	let birthdate    = $state<string>( memoriesStore.currentUser.birthdate );
+	let sexId        = $state<string>( memoriesStore.currentUser.sex_id );
+	let savedSuccess = $state<boolean>( false );
 
-    let name            = $state<string>( '' );
-	let lastName        = $state<string>( '' );
-	let email           = $state<string>( '' );
-	let phone           = $state<string>( '' );
-	let birthdate       = $state<string>( '' );
-	let sexId           = $state<string>( '' );
-	let savedSuccess    = $state<boolean>( false );
-
-
-    $effect( () => {
-		if ( currentUser ) {
-			name        = currentUser.name;
-			lastName    = currentUser.last_name;
-			email       = currentUser.email;
-			phone       = currentUser.phone;
-			birthdate   = currentUser.birthdate;
-			sexId       = currentUser.sex_id;
-		}
-	});
-
-
-    const userPoints            = $derived<number>( currentUser.points || 0 );
-	const userLevel             = $derived<number>( Math.floor( userPoints / 100 ) + 1 );
-	const currentLevelProgress  = $derived<number>( userPoints % 100 );
+    const userPoints           = $derived<number>( currentUser.points || 0 );
+	const userLevel            = $derived<number>( Math.floor( userPoints / 100 ) + 1 );
+	const currentLevelProgress = $derived<number>( userPoints % 100 );
 
 
 	const sexes: Sex[] = INITIAL_SEXES;
