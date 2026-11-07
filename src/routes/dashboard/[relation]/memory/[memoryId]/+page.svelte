@@ -49,7 +49,6 @@
 	);
 
 	let isUploadOpen              = $state<boolean>( false );
-	let isUnlockOpen              = $state<boolean>( false );
 	let unlockMomentTarget        = $state<MomentEntity | null>( null );
 	let isUnlockMomentOpen        = $state<boolean>( false );
 	let isEditMemoryOpen          = $state<boolean>( false );
@@ -59,24 +58,18 @@
 		!memory?.password || ( memory ? memoriesStore.isMemoryUnlocked( memory.id ) : true )
 	);
 
+	const isUnlockOpen = $derived<boolean>(
+		Boolean( memory?.password && !isMemoryUnlocked )
+	);
+
 	const memoryRemainingSeconds = $derived<number | undefined>(
 		memory ? memoriesStore.getMemoryRemainingSeconds( memory.id ) : undefined
 	);
-
-	$effect( () => {
-		if ( memory?.password && !isMemoryUnlocked ) {
-			isUnlockOpen = true;
-		} else {
-			isUnlockOpen = false;
-		}
-	});
 
 	function handleMemoryUnlockSuccess(): void {
 		if ( memory ) {
 			memoriesStore.unlockMemory( memory.id, memory.timer );
 		}
-
-        isUnlockOpen = false;
 	}
 
 	function handleUnlockMoment( moment: MomentEntity ): void {
@@ -271,7 +264,6 @@
 		correctPassword={ memory.password }
 		onSuccess={ handleMemoryUnlockSuccess }
 		onClose={ () => {
-			isUnlockOpen = false;
 			goto( `/dashboard/${ relationParam }` );
 		} }
 	/>
