@@ -40,19 +40,14 @@
 		onAdd
 	}: Props = $props();
 
-	let activeTab = $state<string>( 'moment' );
+	let activeTab     = $state<string>( 'moment' );
 	let selectedRelId = $state<string>( '' );
 
 	$effect( () => {
-		if ( editingMoment ) {
-			activeTab = 'moment';
-		} else {
-			activeTab = initialTab;
+		if ( isOpen ) {
+			activeTab     = editingMoment ? 'moment' : initialTab;
+			selectedRelId = editingMoment?.relationship_id || relationshipId || memoriesStore.groups[ 0 ]?.id || 'rel_1';
 		}
-	} );
-
-	$effect( () => {
-		selectedRelId = editingMoment?.relationship_id || relationshipId || memoriesStore.groups[ 0 ]?.id || 'rel_1';
 	} );
 
 	const isEditMode = $derived<boolean>( Boolean( editingMoment ) );
