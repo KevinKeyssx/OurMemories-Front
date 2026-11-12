@@ -24,20 +24,28 @@ import {
 } from './data';
 
 function computeMomentTags( data: Partial<MomentEntity> ): MomentTag[] {
-	const tags: MomentTag[] = [];
-	const hasImage = Boolean( data.metadata?.imageUrl && data.metadata.imageUrl.trim() !== '' );
-	const hasVideo = Boolean( data.metadata?.videoUrl && data.metadata.videoUrl.trim() !== '' );
-	const hasText = Boolean( data.content && data.content.trim() !== '' );
+	if ( data.tags && data.tags.length > 0 ) {
+		return [ ...data.tags ];
+	}
 
-	if ( hasImage ) {
+	const tags: MomentTag[] = [];
+	const mediaUrl = ( data.metadata?.url || data.metadata?.imageUrl || data.metadata?.videoUrl || data.metadata?.audioUrl || '' ).trim();
+	const isAudio  = Boolean( data.metadata?.audioDuration || mediaUrl.startsWith( 'data:audio' ) || mediaUrl.endsWith( '.mp3' ) || mediaUrl.endsWith( '.wav' ) || mediaUrl.endsWith( '.ogg' ) || mediaUrl.endsWith( '.webm' ) );
+	const isVideo  = Boolean( mediaUrl.includes( 'youtube.com' ) || mediaUrl.includes( 'youtu.be' ) || mediaUrl.endsWith( '.mp4' ) || mediaUrl.endsWith( '.mov' ) || data.metadata?.videoUrl );
+	const isImage  = Boolean( mediaUrl && !isAudio && !isVideo );
+	const hasText  = Boolean( data.content && data.content.trim() !== '' );
+
+	if ( isAudio ) {
+		tags.push( 'voice note' );
+	} else if ( isVideo ) {
+		tags.push( 'video' );
+	} else if ( isImage ) {
 		tags.push( 'image' );
 	}
-	if ( hasVideo ) {
-		tags.push( 'video' );
-	}
+
 	if ( hasText ) {
 		tags.push( 'text' );
-		if ( !hasImage && !hasVideo ) {
+		if ( !isAudio && !isVideo && !isImage ) {
 			tags.push( 'quote' );
 		}
 	}
@@ -712,6 +720,12 @@ class MemoriesStore {
 			( v: MomentUserView ) => !( v.moment_id === momentId && v.user_id === userId )
 		);
 		this.persist();
+	}
+
+	isMomentViewed( momentId: string, userId: string ): boolean {
+		return this.momentViews.some(
+			( v: MomentUserView ) => v.moment_id === momentId && v.user_id === userId
+		);
 	}
 
 	updateMoment( id: string, updated: Partial<MomentEntity> ): boolean {
