@@ -309,7 +309,7 @@ export const INITIAL_MOMENTS: MomentEntity[] = [
 		capture_date    : '2023-10-12',
 		tags            : [ 'image', 'text' ],
 		metadata        : {
-			imageUrl : 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=800'
+			url : 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=800'
 		}
 	},
 	{
@@ -338,7 +338,7 @@ export const INITIAL_MOMENTS: MomentEntity[] = [
 		capture_date    : '2023-11-05',
 		tags            : [ 'image', 'text' ],
 		metadata        : {
-			imageUrl    : 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?auto=format&fit=crop&q=80&w=800',
+			url         : 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?auto=format&fit=crop&q=80&w=800',
 			is_temporal : true
 		}
 	},
@@ -368,10 +368,10 @@ export const INITIAL_MOMENTS: MomentEntity[] = [
 		created_by      : 'user_1',
 		created_at      : '2023-11-15T16:00:00.000Z',
 		capture_date    : '2023-11-15',
-		tags            : [ 'video', 'image', 'text' ],
+		tags            : [ 'image', 'text' ],
 		metadata        : {
-			videoUrl : 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-			imageUrl : 'https://images.unsplash.com/photo-1544126592-807ade215a0b?auto=format&fit=crop&q=80&w=800'
+			url            : 'https://images.unsplash.com/photo-1544126592-807ade215a0b?auto=format&fit=crop&q=80&w=800',
+			youtubeVideoId : 'dQw4w9WgXcQ'
 		}
 	},
 	{
@@ -400,7 +400,7 @@ export const INITIAL_MOMENTS: MomentEntity[] = [
 		capture_date    : '2023-12-01',
 		tags            : [ 'image', 'text' ],
 		metadata        : {
-			imageUrl : 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&q=80&w=800'
+			url : 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&q=80&w=800'
 		}
 	}
 ];
