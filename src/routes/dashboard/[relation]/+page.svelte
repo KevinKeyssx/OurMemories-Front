@@ -13,6 +13,8 @@
 	import type { Relationship, MomentEntity, MemoryEntity } from '$lib/types';
 	import MemoryCarousel                                    from '$lib/components/memories/MemoryCarousel.svelte';
 	import MomentList                                        from '$lib/components/moments/MomentList.svelte';
+	import RelationshipTimeCounter                           from '$lib/components/relationship/RelationshipTimeCounter.svelte';
+	import ManageRelationshipModal                           from '$lib/components/relationship/ManageRelationshipModal.svelte';
 	import SecurityUnlockModal                               from '$lib/components/shared/SecurityUnlockModal.svelte';
 	import ConfirmDialog                                     from '$lib/components/shared/ConfirmDialog.svelte';
 	import EditMemoryModal                                   from '$lib/components/memories/EditMemoryModal.svelte';
@@ -76,6 +78,7 @@
 	let isConfirmDeleteMemoryOpen = $state<boolean>( false );
 	let unlockTarget              = $state<{ type: 'memory' | 'moment'; item: MemoryEntity | MomentEntity } | null>( null );
 	let isUnlockOpen              = $state<boolean>( false );
+	let isManageRelationshipOpen  = $state<boolean>( false );
 
 	function handleEditMemory( memory: MemoryEntity ): void {
 		editingMemory = memory;
@@ -134,140 +137,150 @@
 </svelte:head>
 
 <div class="space-y-10">
-	<!-- Sección de Nivel y Progreso de la Relación (Viva, Elegante con Animaciones) -->
-	<div class="relative overflow-hidden rounded-3xl bg-white/70 dark:bg-dark-card/70 border border-stone-200/60 dark:border-white/5 p-6 sm:p-8 backdrop-blur-xl shadow-xl transition-all duration-500 hover:shadow-2xl">
-		<!-- Resplandor dinámico de fondo con el color de la relación -->
-		<div
-			class="absolute -right-20 -top-20 w-72 h-72 rounded-full opacity-20 blur-3xl pointer-events-none transition-all duration-700"
-			style="background-color: { currentRelationship?.color || '#f43f5e' };"
-		></div>
-
-		<div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-			<!-- Información de la Relación -->
-			<div class="flex items-start sm:items-center gap-4">
-				<div
-					class="w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg shrink-0 transition-transform duration-500 hover:scale-105 overflow-hidden"
-					style="background: { currentRelationship?.color || '#f43f5e' }; box-shadow: 0 10px 25px -5px { currentRelationship?.color || '#f43f5e' }66;"
-				>
-					{#if isImageAvatar( currentRelationship?.avatar )}
-						<img
-							src={ currentRelationship?.avatar }
-							alt={ currentRelationship?.name || 'Avatar de la relación' }
-							class="w-full h-full object-cover rounded-2xl"
-						/>
-					{:else}
-						<RelationshipIcon size={ 28 } />
-					{/if}
-				</div>
-
-				<div>
-					<div class="flex items-center gap-2 mb-1">
-						<span
-							class="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full text-white shadow-sm"
-							style="background: { currentRelationship?.color || '#f43f5e' };"
-						>
-							Nivel { level }
-						</span>
-						<span class="text-xs font-semibold text-stone-400">
-							{ points } Puntos Totales
-						</span>
-					</div>
-
-					<h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight">
-						Espacio de { currentRelationship?.name || 'Cargando...' }
-					</h2>
-					<p class="text-xs text-stone-500 dark:text-stone-400 mt-0.5 font-medium">
-						Explora las memorias temáticas, dedicatorias y momentos especiales
-					</p>
-				</div>
-			</div>
-
-			<!-- Contador de Memorias y Momentos -->
-			<div class="flex items-center gap-3">
-				<div class="flex items-center gap-2.5 bg-stone-100/70 dark:bg-white/3 border border-stone-200/60 dark:border-white/5 px-3.5 py-2.5 rounded-2xl shrink-0">
-					<FolderHeart size={ 17 } style="color: { currentRelationship?.color || '#f43f5e' };" />
-					<div class="text-xs">
-						<span class="text-stone-400">Memorias: </span>
-						<span class="font-extrabold text-brand-ink dark:text-white">{ relationshipMemories.length }</span>
-					</div>
-				</div>
-
-				<div class="flex items-center gap-2.5 bg-stone-100/70 dark:bg-white/3 border border-stone-200/60 dark:border-white/5 px-3.5 py-2.5 rounded-2xl shrink-0">
-					<Award size={ 17 } class="text-brand-secondary" />
-					<div class="text-xs">
-						<span class="text-stone-400">Momentos: </span>
-						<span class="font-extrabold text-brand-ink dark:text-white">{ relationshipMoments.length }</span>
-					</div>
-				</div>
-			</div>
-		</div>
-
-		<!-- Barra de Progreso Viva con Resplandor y Animación Tailwind -->
-		<div class="relative z-10 mt-6 pt-6 border-t border-stone-200/40 dark:border-white/5 space-y-2">
-			<div class="flex items-center justify-between text-xs font-bold">
-				<span class="text-stone-600 dark:text-stone-300 flex items-center gap-1.5">
-					<Sparkles size={ 14 } style="color: { currentRelationship?.color || '#f43f5e' };" />
-					Progreso al Nivel { level + 1 }
-				</span>
-				<span class="text-stone-400 text-[11px] font-semibold">
-					Faltan <span class="font-bold text-stone-700 dark:text-stone-200">{ pointsRemaining } pts</span> ({ currentLevelProgress } / 100)
-				</span>
-			</div>
-
-			<!-- Contenedor de la Barra -->
-			<div class="w-full h-3.5 rounded-full bg-stone-100 dark:bg-white/10 p-0.5 overflow-hidden shadow-inner">
-				<div
-					class="h-full rounded-full transition-all duration-1000 ease-out relative"
-					style="width: { currentLevelProgress }%; background: linear-gradient(90deg, { currentRelationship?.color || '#f43f5e' }bb, { currentRelationship?.color || '#f43f5e' }); box-shadow: 0 0 15px { currentRelationship?.color || '#f43f5e' }88;"
-				>
-					<!-- Efecto de brillo animado en la punta de la barra -->
-					<div class="absolute right-0 top-0 bottom-0 w-2 bg-white/60 rounded-full blur-[1px]"></div>
-				</div>
-			</div>
-		</div>
-	</div>
-
-	<!-- Sección 1: Carrusel / Grid de Memorias -->
-	<MemoryCarousel
-		memories={ relationshipMemories }
-		relationPath={ pathName }
-		moments={ relationshipMoments }
-		color={ currentRelationship?.color || '#f43f5e' }
-		onOpenCreate={ () => ( isCreateMemoryOpen = true ) }
-		onUnlockMemory={ handleUnlockMemory }
-		onEditMemory={ handleEditMemory }
-		onDeleteMemory={ handleDeleteMemoryPrompt }
-	/>
-
-	<!-- Separador Elegante -->
-	<div class="h-px bg-stone-200/60 dark:bg-white/5 my-2"></div>
-
-	<!-- Sección 2: Galería de Momentos (Filtros por Tags y Buscador) -->
-	<div class="space-y-4">
-		<div class="flex items-center gap-2">
+		<!-- Sección de Nivel y Progreso de la Relación (Viva, Elegante con Animaciones) -->
+		<div class="relative overflow-hidden rounded-3xl bg-white/70 dark:bg-dark-card/70 border border-stone-200/60 dark:border-white/5 p-6 sm:p-8 backdrop-blur-xl shadow-xl transition-all duration-500 hover:shadow-2xl">
+			<!-- Resplandor dinámico de fondo con el color de la relación -->
 			<div
-				class="w-8 h-8 rounded-xl flex items-center justify-center transition-colors"
-				style="background-color: { currentRelationship?.color || '#f43f5e' }18; color: { currentRelationship?.color || '#f43f5e' };"
-			>
-				<Sparkles size={ 18 } />
+				class="absolute -right-20 -top-20 w-72 h-72 rounded-full opacity-20 blur-3xl pointer-events-none transition-all duration-700"
+				style="background-color: { currentRelationship?.color || '#f43f5e' };"
+			></div>
+
+			<div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+				<!-- Información de la Relación -->
+				<div class="flex items-start sm:items-center gap-4">
+					<div
+						class="w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg shrink-0 transition-transform duration-500 hover:scale-105 overflow-hidden"
+						style="background: { currentRelationship?.color || '#f43f5e' }; box-shadow: 0 10px 25px -5px { currentRelationship?.color || '#f43f5e' }66;"
+					>
+						{#if isImageAvatar( currentRelationship?.avatar )}
+							<img
+								src={ currentRelationship?.avatar }
+								alt={ currentRelationship?.name || 'Avatar de la relación' }
+								class="w-full h-full object-cover rounded-2xl"
+							/>
+						{:else}
+							<RelationshipIcon size={ 28 } />
+						{/if}
+					</div>
+
+					<div>
+						<div class="flex items-center gap-2 mb-1">
+							<span
+								class="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full text-white shadow-sm"
+								style="background: { currentRelationship?.color || '#f43f5e' };"
+							>
+								Nivel { level }
+							</span>
+							<span class="text-xs font-semibold text-stone-400">
+								{ points } Puntos Totales
+							</span>
+						</div>
+
+						<h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight">
+							Espacio de { currentRelationship?.name || 'Cargando...' }
+						</h2>
+						<p class="text-xs text-stone-500 dark:text-stone-400 mt-0.5 font-medium">
+							Explora las memorias temáticas, dedicatorias y momentos especiales
+						</p>
+					</div>
+				</div>
+
+				<!-- Contador de Memorias, Momentos y Tiempo Juntos -->
+				<div class="flex flex-col items-start md:items-end gap-3">
+					<div class="flex items-center gap-3">
+						<div class="flex items-center gap-2.5 bg-stone-100/70 dark:bg-white/3 border border-stone-200/60 dark:border-white/5 px-3.5 py-2.5 rounded-2xl shrink-0">
+							<FolderHeart size={ 17 } style="color: { currentRelationship?.color || '#f43f5e' };" />
+							<div class="text-xs">
+								<span class="text-stone-400">Memorias: </span>
+								<span class="font-extrabold text-brand-ink dark:text-white">{ relationshipMemories.length }</span>
+							</div>
+						</div>
+
+						<div class="flex items-center gap-2.5 bg-stone-100/70 dark:bg-white/3 border border-stone-200/60 dark:border-white/5 px-3.5 py-2.5 rounded-2xl shrink-0">
+							<Award size={ 17 } class="text-brand-secondary" />
+							<div class="text-xs">
+								<span class="text-stone-400">Momentos: </span>
+								<span class="font-extrabold text-brand-ink dark:text-white">{ relationshipMoments.length }</span>
+							</div>
+						</div>
+					</div>
+
+					<!-- Hermoso Contador de Tiempo Transcurrido de la Relación -->
+					<RelationshipTimeCounter
+						date={ currentRelationship?.date }
+						color={ currentRelationship?.color }
+						onOpenSettings={ () => ( isManageRelationshipOpen = true ) }
+					/>
+				</div>
 			</div>
-			<div>
-				<h3 class="text-base font-extrabold tracking-tight">Momentos de la Relación</h3>
-				<p class="text-[11px] text-stone-400 font-medium">Fotos, videos, notas y dedicatorias compartidas</p>
+
+			<!-- Barra de Progreso Viva con Resplandor y Animación Tailwind -->
+			<div class="relative z-10 mt-6 pt-6 border-t border-stone-200/40 dark:border-white/5 space-y-2">
+				<div class="flex items-center justify-between text-xs font-bold">
+					<span class="text-stone-600 dark:text-stone-300 flex items-center gap-1.5">
+						<Sparkles size={ 14 } style="color: { currentRelationship?.color || '#f43f5e' };" />
+						Progreso al Nivel { level + 1 }
+					</span>
+					<span class="text-stone-400 text-[11px] font-semibold">
+						Faltan <span class="font-bold text-stone-700 dark:text-stone-200">{ pointsRemaining } pts</span> ({ currentLevelProgress } / 100)
+					</span>
+				</div>
+
+				<!-- Contenedor de la Barra -->
+				<div class="w-full h-3.5 rounded-full bg-stone-100 dark:bg-white/10 p-0.5 overflow-hidden shadow-inner">
+					<div
+						class="h-full rounded-full transition-all duration-1000 ease-out relative"
+						style="width: { currentLevelProgress }%; background: linear-gradient(90deg, { currentRelationship?.color || '#f43f5e' }bb, { currentRelationship?.color || '#f43f5e' }); box-shadow: 0 0 15px { currentRelationship?.color || '#f43f5e' }88;"
+					>
+						<!-- Efecto de brillo animado en la punta de la barra -->
+						<div class="absolute right-0 top-0 bottom-0 w-2 bg-white/60 rounded-full blur-[1px]"></div>
+					</div>
+				</div>
 			</div>
 		</div>
 
-		<MomentList
+		<!-- Sección 1: Carrusel / Grid de Memorias -->
+		<MemoryCarousel
+			memories={ relationshipMemories }
+			relationPath={ pathName }
 			moments={ relationshipMoments }
-			currentUserId={ memoriesStore.currentUser.id }
-			relationName={ currentRelationship?.name || 'esta relación' }
 			color={ currentRelationship?.color || '#f43f5e' }
-			onDelete={ handleDeleteMoment }
-			onUnlock={ handleUnlockMoment }
-			onRecordView={ handleRecordView }
+			onOpenCreate={ () => ( isCreateMemoryOpen = true ) }
+			onUnlockMemory={ handleUnlockMemory }
+			onEditMemory={ handleEditMemory }
+			onDeleteMemory={ handleDeleteMemoryPrompt }
 		/>
+
+		<!-- Separador Elegante -->
+		<div class="h-px bg-stone-200/60 dark:bg-white/5 my-2"></div>
+
+		<!-- Sección 2: Galería de Momentos (Filtros por Tags y Buscador) -->
+		<div class="space-y-4">
+			<div class="flex items-center gap-2">
+				<div
+					class="w-8 h-8 rounded-xl flex items-center justify-center transition-colors"
+					style="background-color: { currentRelationship?.color || '#f43f5e' }18; color: { currentRelationship?.color || '#f43f5e' };"
+				>
+					<Sparkles size={ 18 } />
+				</div>
+				<div>
+					<h3 class="text-base font-extrabold tracking-tight">Momentos de la Relación</h3>
+					<p class="text-[11px] text-stone-400 font-medium">Fotos, videos, notas y dedicatorias compartidas</p>
+				</div>
+			</div>
+
+			<MomentList
+				moments={ relationshipMoments }
+				currentUserId={ memoriesStore.currentUser.id }
+				relationName={ currentRelationship?.name || 'esta relación' }
+				relationPath={ pathName }
+				color={ currentRelationship?.color || '#f43f5e' }
+				onDelete={ handleDeleteMoment }
+				onUnlock={ handleUnlockMoment }
+				onRecordView={ handleRecordView }
+			/>
+		</div>
 	</div>
-</div>
 
 <!-- Modal para Desbloquear Contraseñas de Memorias o Momentos -->
 <SecurityUnlockModal
@@ -315,3 +328,13 @@
 	initialTab="memory"
 	onClose={ () => ( isCreateMemoryOpen = false ) }
 />
+
+<!-- Modal de Gestión de Relación (para editar la fecha de inicio u otras opciones) -->
+{#if isManageRelationshipOpen && currentRelationship}
+	<ManageRelationshipModal
+		isOpen={ isManageRelationshipOpen }
+		relationship={ currentRelationship }
+		initialTab="relacion"
+		onClose={ () => ( isManageRelationshipOpen = false ) }
+	/>
+{/if}
