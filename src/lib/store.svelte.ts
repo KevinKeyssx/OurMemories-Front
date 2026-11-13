@@ -29,9 +29,9 @@ function computeMomentTags( data: Partial<MomentEntity> ): MomentTag[] {
 	}
 
 	const tags: MomentTag[] = [];
-	const mediaUrl = ( data.metadata?.url || data.metadata?.imageUrl || data.metadata?.videoUrl || data.metadata?.audioUrl || '' ).trim();
+	const mediaUrl = ( data.metadata?.url || '' ).trim();
 	const isAudio  = Boolean( data.metadata?.audioDuration || mediaUrl.startsWith( 'data:audio' ) || mediaUrl.endsWith( '.mp3' ) || mediaUrl.endsWith( '.wav' ) || mediaUrl.endsWith( '.ogg' ) || mediaUrl.endsWith( '.webm' ) );
-	const isVideo  = Boolean( mediaUrl.includes( 'youtube.com' ) || mediaUrl.includes( 'youtu.be' ) || mediaUrl.endsWith( '.mp4' ) || mediaUrl.endsWith( '.mov' ) || data.metadata?.videoUrl );
+	const isVideo  = Boolean( mediaUrl.includes( 'youtube.com' ) || mediaUrl.includes( 'youtu.be' ) || mediaUrl.endsWith( '.mp4' ) || mediaUrl.endsWith( '.mov' ) );
 	const isImage  = Boolean( mediaUrl && !isAudio && !isVideo );
 	const hasText  = Boolean( data.content && data.content.trim() !== '' );
 
@@ -370,7 +370,8 @@ class MemoriesStore {
 			is_active  : data.is_active !== undefined ? data.is_active : true,
 			type_id    : data.type_id || defaultTypeId,
 			color      : data.color || defaultColor,
-			order      : typeof data.order === 'number' ? data.order : this.groups.length
+			order      : typeof data.order === 'number' ? data.order : this.groups.length,
+			date       : data.date || undefined
 		};
 
 		this.groups = [ ...this.groups, newRel ];
