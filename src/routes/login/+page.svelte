@@ -1,16 +1,30 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { memoriesStore } from '$lib/store.svelte';
-	import { Sparkles, ArrowLeft, KeyRound } from '@lucide/svelte';
+	import { page } from '$app/state';
+
+    import { Sparkles, ArrowLeft, KeyRound } from '@lucide/svelte';
+
+    import { memoriesStore } from '$lib/store.svelte';
+
 
 	let email = $state<string>( '' );
 	let password = $state<string>( '' );
 
-	function handleLogin( e: SubmitEvent ): void {
+
+    function handleLogin( e: SubmitEvent ): void {
 		e.preventDefault();
-		memoriesStore.login();
-		const targetPath = memoriesStore.groups[0]?.path_name || 'pareja';
-		goto( `/dashboard/${targetPath}` );
+
+        memoriesStore.login();
+
+        const redirectTo = page.url.searchParams.get( 'redirectTo' );
+
+        if ( redirectTo ) {
+			goto( redirectTo );
+		} else {
+			const targetPath = memoriesStore.groups[ 0 ]?.path_name || 'pareja';
+
+            goto( `/dashboard/${ targetPath }` );
+		}
 	}
 </script>
 
