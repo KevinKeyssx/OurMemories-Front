@@ -22,37 +22,41 @@
 	export type MediaAcceptType = 'all' | 'image' | 'video';
 
 	interface Props {
-		imageUrl      ?: string;
-		videoUrl      ?: string;
-		maxSizeMB     ?: number;
-		accept        ?: MediaAcceptType;
-		label         ?: string;
-		color         ?: string;
-		class         ?: string;
-		onMediaChange ?: ( data: MediaChangeEvent ) => void;
+		url              ?: string;
+		imageUrl          ?: string;
+		videoUrl          ?: string;
+		videoDuration     ?: number;
+		maxSizeMB         ?: number;
+		accept            ?: MediaAcceptType;
+		label             ?: string;
+		color             ?: string;
+		class             ?: string;
+		onMediaChange     ?: ( data: MediaChangeEvent ) => void;
+		onDurationChange  ?: ( duration: number ) => void;
 	}
 
 	let {
+		url = $bindable( '' ),
 		imageUrl = $bindable( '' ),
 		videoUrl = $bindable( '' ),
+		videoDuration = $bindable( 0 ),
 		maxSizeMB = 15,
 		accept = 'all',
 		label = 'Foto o Video del Momento',
 		color,
 		class: customClass = '',
-		onMediaChange
+		onMediaChange,
+		onDurationChange
 	}: Props = $props();
 
-
-    let activeMode      = $state<string>( 'local' );
+	let activeMode      = $state<string>( 'local' );
 	let isDragging      = $state<boolean>( false );
 	let errorMsg        = $state<string>( '' );
 	let fileName        = $state<string>( '' );
 	let urlInput        = $state<string>( '' );
 	let fileInputRef    = $state<HTMLInputElement | null>( null );
 
-
-    const uploadTabs: TabItem[] = [
+	const uploadTabs: TabItem[] = [
 		{
 			id    : 'local',
 			label : 'Local',
@@ -65,8 +69,14 @@
 		}
 	];
 
-	const currentMediaUrl   = $derived<string>( imageUrl || videoUrl );
-	const currentType       = $derived<MediaType>( videoUrl ? 'video' : imageUrl ? 'image' : 'none' );
+	const currentMediaUrl   = $derived<string>( url || imageUrl || videoUrl );
+	const currentType       = $derived<MediaType>(
+		videoUrl || ( url && detectUrlType( url ) === 'video' )
+			? 'video'
+			: imageUrl || ( url && detectUrlType( url ) === 'image' )
+				? 'image'
+				: 'none'
+	);
 
 
     function detectUrlType( url: string ): 'image' | 'video' {
@@ -122,16 +132,18 @@
 		reader.onload = (): void => {
 			const result = reader.result as string;
 
-            if ( isVideo ) {
+			if ( isVideo ) {
+				url = result;
 				videoUrl = result;
 				imageUrl = '';
 
-                onMediaChange?.( { type: 'video', url: result } );
+				onMediaChange?.( { type: 'video', url: result } );
 			} else {
+				url = result;
 				imageUrl = result;
 				videoUrl = '';
 
-                onMediaChange?.( { type: 'image', url: result } );
+				onMediaChange?.( { type: 'image', url: result } );
 			}
 		};
 
@@ -189,31 +201,33 @@
         fileName = val.split( '/' ).pop() || 'Enlace externo';
 
 		if ( detected === 'video' ) {
+			url = val;
 			videoUrl = val;
 			imageUrl = '';
 
-            onMediaChange?.( { type: 'video', url: val } );
+			onMediaChange?.( { type: 'video', url: val } );
 		} else {
+			url = val;
 			imageUrl = val;
 			videoUrl = '';
 
-            onMediaChange?.( { type: 'image', url: val } );
+			onMediaChange?.( { type: 'image', url: val } );
 		}
 	}
 
-
-    function clearMedia(): void {
+	function clearMedia(): void {
+		url = '';
 		imageUrl = '';
 		videoUrl = '';
 		urlInput = '';
 		fileName = '';
 		errorMsg = '';
 
-        if ( fileInputRef ) {
+		if ( fileInputRef ) {
 			fileInputRef.value = '';
 		}
 
-        onMediaChange?.( { type: 'none', url: '' } );
+		onMediaChange?.( { type: 'none', url: '' } );
 	}
 </script>
 
@@ -242,10 +256,17 @@
 			{#if currentType === 'video'}
 				<div class="relative w-full aspect-video max-h-56 bg-stone-950 flex items-center justify-center">
 					<video
-						src={currentMediaUrl}
+						src={ currentMediaUrl }
 						controls
 						playsinline
 						class="w-full h-full object-contain"
+						onloadedmetadata={ ( e: Event ) => {
+							const target = e.target as HTMLVideoElement;
+							if ( target && target.duration && isFinite( target.duration ) ) {
+								videoDuration = target.duration;
+								onDurationChange?.( target.duration );
+							}
+						} }
 					>
 						<track kind="captions" />
 					</video>
