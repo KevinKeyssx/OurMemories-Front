@@ -13,6 +13,7 @@
 	import IconPicker                   from '$lib/components/shared/inputs/IconPicker.svelte';
 	import MediaUploader                from '$lib/components/shared/inputs/MediaUploader.svelte';
 	import ColorPicker                  from '$lib/components/shared/inputs/ColorPicker.svelte';
+	import DatePicker                   from '$lib/components/shared/inputs/DatePicker.svelte';
 
 
     interface Props {
@@ -44,7 +45,8 @@
 			...r,
 			avatar  : r.avatar || ( r as unknown as { icon?: string } ).icon || 'Heart',
 			type_id : r.type_id || ( relationshipTypes && relationshipTypes[ 0 ] ? relationshipTypes[ 0 ].id : '1' ),
-			color   : r.color || '#f43f5e'
+			color   : r.color || '#f43f5e',
+			date    : r.date ? r.date.split( 'T' )[ 0 ] : ''
 		}) );
 	}
 
@@ -100,7 +102,8 @@
 			is_active  : true,
 			type_id    : defaultTypeId,
 			color      : defaultColor,
-			order      : localRelationships.length
+			order      : localRelationships.length,
+			date       : new Date().toISOString().split( 'T' )[ 0 ]
 		};
 
 		localRelationships = [ ...localRelationships, newRel ];
@@ -120,7 +123,11 @@
 	}
 
 	function save(): void {
-		onUpdate( localRelationships );
+		const formatted: Relationship[] = localRelationships.map( ( r: Relationship ) => ({
+			...r,
+			date : r.date ? ( r.date.includes( 'T' ) ? r.date : `${ r.date }T00:00:00.000Z` ) : undefined
+		}) );
+		onUpdate( formatted );
 		onClose();
 	}
 </script>
@@ -185,6 +192,15 @@
 									id={`rel-type-${ rel.id }`}
 								/>
 							</div>
+						</div>
+
+						<!-- Fecha de Inicio / Aniversario -->
+						<div class="pt-3 border-t border-stone-200/50 dark:border-white/5">
+							<DatePicker
+								bind:value={ rel.date }
+								label="Fecha de inicio / aniversario de la relación"
+								id={`rel-date-${ rel.id }`}
+							/>
 						</div>
 
 						<!-- Configuración de Avatar: Alternar entre Ícono o Imagen con Tabs animados -->
