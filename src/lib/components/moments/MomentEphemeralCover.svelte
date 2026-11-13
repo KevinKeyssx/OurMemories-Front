@@ -5,7 +5,7 @@
 		Lock,
 		ShieldAlert,
 		RotateCcw,
-		Hand
+		Play
 	} from '@lucide/svelte';
 
 	interface Props {
@@ -14,8 +14,9 @@
 		bgColor        ?: string;
 		secondsLeft    ?: number;
 		totalDuration  ?: number;
-		onStartHolding  : () => void;
-		onStopHolding   : () => void;
+		onStartHolding ?: () => void;
+		onStopHolding  ?: () => void;
+		onReveal       ?: () => void;
 		onReplay       ?: () => void;
 	}
 
@@ -27,12 +28,21 @@
 		totalDuration = 5,
 		onStartHolding,
 		onStopHolding,
+		onReveal,
 		onReplay
 	}: Props = $props();
 
 	const isPaused = $derived<boolean>(
 		Boolean( secondsLeft !== undefined && secondsLeft > 0 && secondsLeft < totalDuration )
 	);
+
+	function handleAction(): void {
+		if ( onReveal ) {
+			onReveal();
+		} else if ( onStartHolding ) {
+			onStartHolding();
+		}
+	}
 </script>
 
 <div
@@ -72,16 +82,16 @@
 		{#if canReplay && onReplay}
 			<button
 				type="button"
-				onpointerdown={( e: PointerEvent ) => {
+				onpointerdown={ ( e: PointerEvent ) => {
 					e.stopPropagation();
-				}}
-				onpointerup={( e: PointerEvent ) => {
+				} }
+				onpointerup={ ( e: PointerEvent ) => {
 					e.stopPropagation();
-				}}
-				onclick={( e: MouseEvent ) => {
+				} }
+				onclick={ ( e: MouseEvent ) => {
 					e.stopPropagation();
 					onReplay();
-				}}
+				} }
 				class="relative z-10 mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-md hover:brightness-105 select-none"
 				style="background: linear-gradient(135deg, { bgColor }25 0%, { bgColor }15 100%); color: { bgColor }; border: 1px solid { bgColor }50; box-shadow: 0 4px 15px -3px { bgColor }30;"
 			>
@@ -102,34 +112,28 @@
 		</h4>
 		<p class="relative z-10 text-[11px] text-stone-600 dark:text-stone-300 max-w-xs mt-1 mb-3 leading-relaxed">
 			{#if isPaused}
-				Mantén presionado para continuar viendo. Te quedan { secondsLeft } segundos restantes.
+				Pasa el cursor o haz clic para continuar viendo. Te quedan { secondsLeft } segundos restantes.
 			{:else}
-				Mantén presionado el botón para ver este recuerdo. Si sueltas el clic el temporizador se pausará.
+				Haz clic en el botón para ver este recuerdo. Si quitas el cursor se pausará.
 			{/if}
 		</p>
 
 		<button
 			type="button"
-			onpointerdown={( e: PointerEvent ) => {
-				e.preventDefault();
-				onStartHolding();
-			}}
-			onpointerup={( e: PointerEvent ) => {
-				e.preventDefault();
-				onStopHolding();
-			}}
-			onpointercancel={( e: PointerEvent ) => {
-				e.preventDefault();
-				onStopHolding();
-			}}
+			onpointerdown={ ( e: PointerEvent ) => e.stopPropagation() }
+			onpointerup={ ( e: PointerEvent ) => e.stopPropagation() }
+			onclick={ ( e: MouseEvent ) => {
+				e.stopPropagation();
+				handleAction();
+			} }
 			class="relative z-10 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-linear-to-r from-amber-500 to-rose-500 text-white text-xs font-bold shadow-lg shadow-amber-500/25 hover:scale-105 active:scale-95 transition-all cursor-pointer select-none"
 		>
 			{#if isPaused}
-				<Hand size={ 14 } class="animate-bounce" />
-				<span>Mantén presionado ({ secondsLeft }s restantes)</span>
+				<Play size={ 14 } class="fill-current" />
+				<span>Continuar viendo ({ secondsLeft }s restantes)</span>
 			{:else}
 				<Eye size={ 14 } />
-				<span>Mantén presionado para ver</span>
+				<span>Ver recuerdo ({ secondsLeft ?? totalDuration }s)</span>
 			{/if}
 		</button>
 	{/if}
