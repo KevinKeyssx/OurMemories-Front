@@ -27,6 +27,7 @@
 		moments        : MomentEntity[];
 		currentUserId  : string;
 		relationName  ?: string;
+		relationPath  ?: string;
 		color         ?: string;
 		onDelete      ?: ( id: string ) => void;
 		onEdit        ?: ( moment: MomentEntity ) => void;
@@ -39,6 +40,7 @@
 		moments,
 		currentUserId,
 		relationName = 'Relación',
+		relationPath = 'pareja',
 		color = '#f43f5e',
 		onDelete,
 		onEdit,
@@ -236,6 +238,7 @@
 						<MomentCard
 							{moment}
 							{currentUserId}
+							{relationPath}
 							relationColor={ color }
 							isViewed={memoriesStore.hasUserViewedMoment( moment.id, currentUserId )}
 							onEdit={handleRequestEdit}
