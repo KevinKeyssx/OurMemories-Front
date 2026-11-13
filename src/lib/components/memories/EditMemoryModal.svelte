@@ -1,8 +1,9 @@
 <script lang="ts">
-	import { FolderHeart, Image, Save } from '@lucide/svelte';
+	import { FolderHeart, Save } from '@lucide/svelte';
 	import type { MemoryEntity } from '$lib/types';
 	import Dialog from '$lib/components/shared/Dialog.svelte';
 	import SecurityOptionsSection from '$lib/components/shared/SecurityOptionsSection.svelte';
+	import MediaUploader from '$lib/components/shared/inputs/MediaUploader.svelte';
 	import { memoriesStore } from '$lib/store.svelte';
 
 	interface Props {
@@ -116,26 +117,14 @@
 				></textarea>
 			</div>
 
-			<div>
-				<label
-					for="edit-mem-cover"
-					class="block text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-1.5"
-				>
-					URL de Portada ( Opcional )
-				</label>
-				<div class="relative flex items-center">
-					<div class="absolute left-3.5 text-stone-400 pointer-events-none">
-						<Image size={ 16 } />
-					</div>
-					<input
-						id="edit-mem-cover"
-						type="url"
-						bind:value={ coverUrl }
-						placeholder="https://ejemplo.com/portada.jpg"
-						class="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-stone-100 dark:bg-white/4 border border-stone-200/80 dark:border-white/10 text-sm font-medium focus:outline-hidden hover:border-brand-accent/50 focus:border-brand-accent transition-colors"
-					/>
-				</div>
-			</div>
+			<!-- Foto de Portada con MediaUploader (Local o URL) -->
+			<MediaUploader
+				bind:url={ coverUrl }
+				bind:imageUrl={ coverUrl }
+				accept="image"
+				label="Foto de Portada ( Opcional )"
+				{color}
+			/>
 		</div>
 
 		<!-- Opciones de Seguridad con Bits UI Accordion -->
