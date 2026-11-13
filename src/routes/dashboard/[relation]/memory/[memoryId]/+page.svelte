@@ -246,6 +246,7 @@
 				moments         = { memoryMoments }
 				currentUserId   = { memoriesStore.currentUser.id }
 				relationName    = { memory.title }
+				relationPath    = { relationParam }
 				color           = { currentRelationship?.color || '#f43f5e' }
 				onDelete        = { handleDeleteMoment }
 				onUnlock        = { handleUnlockMoment }
