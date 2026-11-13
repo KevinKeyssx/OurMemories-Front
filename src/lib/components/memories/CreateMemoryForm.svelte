@@ -1,11 +1,12 @@
 <script lang="ts">
-	import { FolderPlus, Image } from '@lucide/svelte';
+	import { FolderPlus } from '@lucide/svelte';
 	import type { MemoryEntity } from '$lib/types';
 	import SecurityOptionsSection from '$lib/components/shared/SecurityOptionsSection.svelte';
+	import MediaUploader from '$lib/components/shared/inputs/MediaUploader.svelte';
 
 	interface Props {
 		relationshipId : string;
-		color         ?: string;
+		color?         : string;
 		onSubmit       : ( data: Partial<MemoryEntity> ) => void;
 		onCancel       : () => void;
 	}
@@ -17,12 +18,12 @@
 		onCancel
 	}: Props = $props();
 
-	let title = $state<string>( '' );
+	let title       = $state<string>( '' );
 	let description = $state<string>( '' );
-	let coverUrl = $state<string>( '' );
-	let password = $state<string>( '' );
-	let timer = $state<number | undefined>( undefined );
-	let isBlocked = $state<boolean>( false );
+	let coverUrl    = $state<string>( '' );
+	let password    = $state<string>( '' );
+	let timer       = $state<number | undefined>( undefined );
+	let isBlocked   = $state<boolean>( false );
 
 	function handleFormSubmit( e: SubmitEvent ): void {
 		e.preventDefault();
@@ -42,7 +43,7 @@
 	}
 </script>
 
-<form onsubmit={handleFormSubmit} class="space-y-4">
+<form onsubmit={ handleFormSubmit } class="space-y-4">
 	<div class="space-y-3">
 		<div>
 			<label for="mem-title" class="block text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-1.5">
@@ -51,7 +52,7 @@
 			<input
 				id="mem-title"
 				type="text"
-				bind:value={title}
+				bind:value={ title }
 				required
 				placeholder="Ej. Vacaciones en el Sur, Nuestro Aniversario..."
 				class="w-full px-4 py-2.5 rounded-2xl bg-stone-100 dark:bg-white/4 border border-stone-200/80 dark:border-white/10 text-sm font-medium focus:outline-hidden hover:border-brand-accent/50 focus:border-brand-accent transition-colors"
@@ -64,36 +65,27 @@
 			</label>
 			<textarea
 				id="mem-desc"
-				bind:value={description}
+				bind:value={ description }
 				rows={ 2 }
 				placeholder="Añade un relato o dedicatoria general para esta memoria..."
 				class="w-full px-4 py-2.5 rounded-2xl bg-stone-100 dark:bg-white/4 border border-stone-200/80 dark:border-white/10 text-sm font-medium focus:outline-hidden hover:border-brand-accent/50 focus:border-brand-accent transition-colors resize-none"
 			></textarea>
 		</div>
 
-		<div>
-			<label for="mem-cover" class="block text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-1.5">
-				URL de Portada ( Opcional )
-			</label>
-			<div class="relative flex items-center">
-				<div class="absolute left-3.5 text-stone-400 pointer-events-none">
-					<Image size={ 16 } />
-				</div>
-				<input
-					id="mem-cover"
-					type="url"
-					bind:value={coverUrl}
-					placeholder="https://ejemplo.com/portada.jpg"
-					class="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-stone-100 dark:bg-white/4 border border-stone-200/80 dark:border-white/10 text-sm font-medium focus:outline-hidden hover:border-brand-accent/50 focus:border-brand-accent transition-colors"
-				/>
-			</div>
-		</div>
+		<!-- Foto de Portada con MediaUploader (Local o URL) -->
+		<MediaUploader
+			bind:url={ coverUrl }
+			bind:imageUrl={ coverUrl }
+			accept="image"
+			label="Foto de Portada ( Opcional )"
+			{color}
+		/>
 	</div>
 
 	<!-- Opciones de Seguridad Reutilizables con Bits UI Accordion -->
 	<SecurityOptionsSection
-		bind:password={password}
-		bind:timer={timer}
+		bind:password={ password }
+		bind:timer={ timer }
 		showEphemeral={ false }
 	/>
 
@@ -101,7 +93,7 @@
 	<div class="flex items-center justify-end gap-3 pt-3 border-t border-stone-100 dark:border-white/5">
 		<button
 			type="button"
-			onclick={onCancel}
+			onclick={ onCancel }
 			class="px-5 py-2.5 rounded-2xl text-xs font-bold text-stone-500 hover:bg-stone-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
 		>
 			Cancelar
@@ -109,7 +101,7 @@
 
 		<button
 			type="submit"
-			disabled={!title.trim()}
+			disabled={ !title.trim() }
 			class="inline-flex items-center gap-2 px-6 py-2.5 rounded-2xl text-white text-xs font-bold active:scale-95 disabled:opacity-50 disabled:pointer-events-none transition-all cursor-pointer { color ? '' : 'bg-linear-to-r from-brand-accent to-pink-500 shadow-lg shadow-brand-accent/25 hover:shadow-brand-accent/40' }"
 			style={ color ? `background-color: ${ color }; box-shadow: 0 4px 14px -2px ${ color }66;` : '' }
 		>
