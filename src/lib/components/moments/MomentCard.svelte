@@ -1071,7 +1071,6 @@
 	bind:isMusicManuallyPaused={ cardState.isMusicManuallyPaused }
 	{moment}
 	{relationColor}
-	{currentUserId}
 	isViewed={ effectiveIsViewed }
 	onMusicTimeUpdate={ ( sec: number ) => ( cardState.backgroundMusicSec = sec ) }
 	onMusicToggle={ ( playing: boolean, manual?: boolean ) => handleMusicToggle( playing, manual ?? false ) }
