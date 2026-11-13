@@ -10,24 +10,24 @@
 		relationPath    : string;
 		momentsCount?   : number;
 		color?          : string;
+		layoutMode?     : 'carousel' | 'grid';
 		onUnlock?       : ( memory: MemoryEntity ) => void;
 		onEdit?         : ( memory: MemoryEntity ) => void;
 		onDelete?       : ( memory: MemoryEntity ) => void;
 	}
 
-
-    let {
+	let {
 		memory,
 		relationPath,
 		momentsCount = 0,
 		color        = '#f43f5e',
+		layoutMode   = 'carousel',
 		onUnlock,
 		onEdit,
 		onDelete
 	}: Props = $props();
 
-
-    const isUnlocked = $derived<boolean>( !memory.password || memoriesStore.isMemoryUnlocked( memory.id ));
+	const isUnlocked = $derived<boolean>( !memory.password || memoriesStore.isMemoryUnlocked( memory.id ) );
 	const memoryRemainingSeconds = $derived<number | undefined>(
 		memoriesStore.getMemoryRemainingSeconds( memory.id )
 	);
@@ -74,7 +74,7 @@
 <a
 	href={`/dashboard/${ relationPath }/memory/${ memory.id }`}
 	onclick={ handleClick }
-	class="group relative flex flex-col justify-between h-64 w-72 shrink-0 rounded-3xl overflow-hidden border border-stone-200/60 dark:border-white/10 bg-white/70 dark:bg-dark-card/70 shadow-lg hover:shadow-2xl transition-all duration-500 hover:scale-[1.02] p-5 select-none"
+	class="group relative flex flex-col justify-between h-64 { layoutMode === 'grid' ? 'w-full' : 'w-72 shrink-0' } rounded-3xl overflow-hidden border border-stone-200/60 dark:border-white/10 bg-white/70 dark:bg-dark-card/70 shadow-lg hover:shadow-2xl transition-all duration-500 hover:scale-[1.02] p-5 select-none"
 >
 	<!-- Imagen de fondo con superposición suave -->
 	{#if memory.cover_url}
