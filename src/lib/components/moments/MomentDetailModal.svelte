@@ -1,7 +1,8 @@
 <script lang="ts">
-	import { onDestroy, untrack } from 'svelte';
-	import type { Component } from 'svelte';
-	import {
+	import { onDestroy, untrack }   from 'svelte';
+	import type { Component }       from 'svelte';
+
+    import {
 		Image as ImageIcon,
 		Video as VideoIcon,
 		FileText,
@@ -9,48 +10,71 @@
 		Heart,
 		Flame,
 		Calendar,
-		User as UserIcon,
 		Edit3,
-		Trash2
+		Trash2,
+		Headphones,
+		EyeOff,
+		X
 	} from '@lucide/svelte';
-	import type { MomentEntity, MomentTag } from '$lib/types';
-	import { formatCaptureDate } from '$lib/utils/date';
-	import { memoriesStore } from '$lib/store.svelte';
-	import Dialog from '$lib/components/shared/Dialog.svelte';
-	import Tooltip from '$lib/components/shared/Tooltip.svelte';
-	import MomentCountdownProgress from './MomentCountdownProgress.svelte';
 
-	interface Props {
-		open             ?: boolean;
-		moment            : MomentEntity;
-		relationColor    ?: string;
-		currentUserId     : string;
-		isViewed         ?: boolean;
-		onRecordView     ?: ( momentId: string ) => void;
-		onEdit           ?: ( moment: MomentEntity ) => void;
-		onDelete         ?: ( id: string ) => void;
-		onClose          ?: () => void;
+    import type {
+        MomentEntity,
+        MomentTag
+    }                               from '$lib/types';
+	import { formatCaptureDate }    from '$lib/utils/date';
+	import { memoriesStore }        from '$lib/store.svelte';
+	import Dialog                   from '$lib/components/shared/Dialog.svelte';
+	import Tooltip                  from '$lib/components/shared/Tooltip.svelte';
+	import MomentCountdownProgress  from './MomentCountdownProgress.svelte';
+	import AudioPlayer              from './AudioPlayer.svelte';
+	import YouTubeBackgroundPlayer  from './YouTubeBackgroundPlayer.svelte';
+	import SecureEphemeralMedia     from './SecureEphemeralMedia.svelte';
+
+
+    interface Props {
+		open                  ?: boolean;
+		moment                 : MomentEntity;
+		relationColor         ?: string;
+		isViewed              ?: boolean;
+		remainingMs           ?: number | null;
+		musicCurrentTime      ?: number;
+		musicVolume           ?: number;
+		isMusicPlaying        ?: boolean;
+		isMusicManuallyPaused ?: boolean;
+		onMusicTimeUpdate     ?: ( sec: number ) => void;
+		onMusicToggle         ?: ( isPlaying: boolean, manual?: boolean ) => void;
+		onRecordView          ?: ( momentId: string ) => void;
+		onEdit                ?: ( moment: MomentEntity ) => void;
+		onDelete              ?: ( id: string ) => void;
+		onClose               ?: () => void;
 	}
 
 	let {
 		open = $bindable( false ),
 		moment,
-		relationColor = '#f43f5e',
-		currentUserId,
-		isViewed = false,
+		relationColor           = '#f43f5e',
+		isViewed                = false,
+		remainingMs             = $bindable<number | null>( null ),
+		musicCurrentTime        = $bindable<number>( 0 ),
+		musicVolume             = $bindable<number>( 60 ),
+		isMusicPlaying          = $bindable<boolean>( false ),
+		isMusicManuallyPaused   = $bindable<boolean>( false ),
+		onMusicTimeUpdate,
+		onMusicToggle,
 		onRecordView,
 		onEdit,
 		onDelete,
 		onClose
 	}: Props = $props();
 
-	let remainingMs       = $state<number | null>( null );
+	let isObscured        = $state<boolean>( false );
 	let isDisintegrating  = $state<boolean>( false );
-	let animFrameId: number | null   = null;
-	let lastTimestamp: number | null = null;
+	let isVoicePlaying    = $state<boolean>( false );
+	let audioResetTrigger = $state<number>( 0 );
 
-	const isCreator       = $derived<boolean>( Boolean( moment.created_by && moment.created_by === currentUserId ) );
-	const isSuperAdmin    = $derived<boolean>( memoriesStore.currentUser.role === 'super_admin' );
+    let animFrameId     : number | null   = null;
+	let lastTimestamp   : number | null = null;
+
 	const canEdit         = $derived<boolean>( memoriesStore.canEditMoment( moment ) );
 	const canDelete       = $derived<boolean>( memoriesStore.canDeleteMoment( moment ) );
 	const hasCustomBg     = $derived<boolean>( Boolean( moment.metadata?.bgColor ) );
@@ -64,7 +88,25 @@
 				: `border: 1px solid ${ hexColor }45; background: radial-gradient(circle at 50% 0%, ${ hexColor }20 0%, #ffffff 80%); box-shadow: 0 25px 60px -15px ${ hexColor }30, 0 0 35px -10px ${ hexColor }20;`
 			: ''
 	);
-	const totalDuration   = $derived<number>( moment.metadata?.timer || 5 );
+	const mediaUrl        = $derived<string>(
+		( moment.metadata?.url || '' ).trim()
+	);
+	const isVoiceNote     = $derived<boolean>(
+		Boolean( moment.tags?.includes( 'voice note' ) || ( mediaUrl && ( mediaUrl.startsWith( 'data:audio' ) || mediaUrl.endsWith( '.mp3' ) || mediaUrl.endsWith( '.wav' ) || mediaUrl.endsWith( '.ogg' ) || mediaUrl.endsWith( '.webm' ) ) ) )
+	);
+	const isVideo         = $derived<boolean>(
+		Boolean( moment.tags?.includes( 'video' ) || ( !isVoiceNote && ( mediaUrl.includes( 'youtube.com' ) || mediaUrl.includes( 'youtu.be' ) || mediaUrl.endsWith( '.mp4' ) || mediaUrl.endsWith( '.mov' ) ) ) )
+	);
+	const isImage         = $derived<boolean>(
+		Boolean( !isVoiceNote && !isVideo && ( moment.tags?.includes( 'image' ) || mediaUrl ) )
+	);
+
+	const defaultDuration = $derived<number>(
+		isVoiceNote && moment.metadata?.audioDuration
+			? Math.max( 5, Math.ceil( moment.metadata.audioDuration ) )
+			: ( isVideo && moment.metadata?.videoDuration ? Math.max( 5, Math.ceil( moment.metadata.videoDuration ) ) : 5 )
+	);
+	const totalDuration   = $derived<number>( moment.metadata?.timer || defaultDuration );
 	const totalDurationMs = $derived<number>( totalDuration * 1000 );
 
 	const currentRemainingMs = $derived<number>(
@@ -80,7 +122,7 @@
 	);
 
 	function stepTimer( now: number ): void {
-		if ( !open || isDisintegrating ) {
+		if ( !open || isDisintegrating || isObscured ) {
 			lastTimestamp = null;
 			animFrameId = null;
 			return;
@@ -95,6 +137,12 @@
 				remainingMs = 0;
 				lastTimestamp = null;
 				animFrameId = null;
+				musicCurrentTime = 0;
+				isMusicPlaying = false;
+				isMusicManuallyPaused = false;
+				onMusicToggle?.( false, false );
+				onMusicTimeUpdate?.( 0 );
+				audioResetTrigger += 1;
 				triggerThanosDissolve();
 				return;
 			}
@@ -121,6 +169,87 @@
 		lastTimestamp = null;
 	}
 
+	function handleMusicTimeUpdate( sec: number ): void {
+		musicCurrentTime = sec;
+		if ( onMusicTimeUpdate ) {
+			onMusicTimeUpdate( sec );
+		}
+	}
+
+	function handleMusicToggle( playing: boolean, manual = false ): void {
+		isMusicPlaying = playing;
+		if ( manual ) {
+			isMusicManuallyPaused = !playing;
+		}
+		if ( onMusicToggle ) {
+			onMusicToggle( playing, manual );
+		}
+	}
+
+	function handleResumeFromObscured(): void {
+		isObscured = false;
+		if ( open && moment.metadata?.is_temporal && currentRemainingMs > 0 ) {
+			startTimer();
+			if ( moment.metadata?.youtubeVideoId ) {
+				handleMusicToggle( true );
+			}
+		}
+	}
+
+	function handleModalWindowBlur(): void {
+		if ( !open ) {
+			return;
+		}
+		handleMusicToggle( false );
+		if ( moment.metadata?.is_temporal ) {
+			isObscured = true;
+			stopTimer();
+		}
+	}
+
+	function handleModalVisibilityChange(): void {
+		if ( !open ) {
+			return;
+		}
+		if ( document.hidden ) {
+			handleMusicToggle( false );
+			if ( moment.metadata?.is_temporal ) {
+				isObscured = true;
+				stopTimer();
+			}
+		}
+	}
+
+	function handleModalKeyCapture( e: KeyboardEvent ): void {
+		if ( !open || !moment.metadata?.is_temporal ) {
+			return;
+		}
+
+		const isDevToolsKey =
+			e.key === 'F12' ||
+			( ( e.ctrlKey || e.metaKey ) && e.shiftKey && ( e.key === 'I' || e.key === 'i' || e.key === 'C' || e.key === 'c' || e.key === 'J' || e.key === 'j' ) ) ||
+			( ( e.ctrlKey || e.metaKey ) && ( e.key === 'u' || e.key === 'U' ) );
+
+		const isCaptureKey =
+			e.key === 'PrintScreen' ||
+			e.code === 'PrintScreen' ||
+			e.keyCode === 44 ||
+			( ( e.ctrlKey || e.metaKey ) && ( e.key === 'p' || e.key === 'P' || e.key === 's' || e.key === 'S' ) ) ||
+			( e.shiftKey && ( e.metaKey || ( e.ctrlKey && ( e.key === 's' || e.key === 'S' ) ) ) );
+
+		if ( isDevToolsKey || isCaptureKey ) {
+			e.preventDefault();
+			e.stopPropagation();
+			isObscured = true;
+			stopTimer();
+			handleMusicToggle( false );
+
+			try {
+				navigator.clipboard?.writeText( '' );
+			} catch {}
+		}
+	}
+
 	function triggerThanosDissolve(): void {
 		isDisintegrating = true;
 
@@ -130,7 +259,6 @@
 			}
 			open = false;
 			isDisintegrating = false;
-			remainingMs = null;
 			if ( onClose ) {
 				onClose();
 			}
@@ -138,32 +266,93 @@
 	}
 
 	$effect( () => {
-		if ( open && moment.metadata?.is_temporal && !isViewed ) {
+		if ( open ) {
 			untrack( () => {
-				remainingMs = totalDurationMs;
-				isDisintegrating = false;
-				startTimer();
+				if ( moment.metadata?.youtubeVideoId && !isMusicManuallyPaused ) {
+					handleMusicToggle( true, false );
+				}
+				if ( moment.metadata?.is_temporal && !isViewed ) {
+					if ( remainingMs === null || remainingMs <= 0 ) {
+						remainingMs = totalDurationMs;
+					}
+					isDisintegrating = false;
+					isObscured = false;
+					startTimer();
+				}
 			} );
 		} else if ( !open ) {
 			untrack( () => {
 				stopTimer();
-				remainingMs = null;
 				isDisintegrating = false;
+				isObscured = false;
+				handleMusicToggle( false, false );
 			} );
+		}
+	} );
+
+	$effect( () => {
+		if ( typeof window === 'undefined' ) {
+			return;
+		}
+
+		if ( open && moment.metadata?.is_temporal ) {
+			window.addEventListener( 'blur', handleModalWindowBlur );
+			document.addEventListener( 'visibilitychange', handleModalVisibilityChange );
+			window.addEventListener( 'keydown', handleModalKeyCapture, true );
+			window.addEventListener( 'keyup', handleModalKeyCapture, true );
+
+			return () => {
+				window.removeEventListener( 'blur', handleModalWindowBlur );
+				document.removeEventListener( 'visibilitychange', handleModalVisibilityChange );
+				window.removeEventListener( 'keydown', handleModalKeyCapture, true );
+				window.removeEventListener( 'keyup', handleModalKeyCapture, true );
+			};
 		}
 	} );
 
 	onDestroy( () => {
 		stopTimer();
+		if ( typeof window !== 'undefined' ) {
+			window.removeEventListener( 'blur', handleModalWindowBlur );
+			document.removeEventListener( 'visibilitychange', handleModalVisibilityChange );
+			window.removeEventListener( 'keydown', handleModalKeyCapture, true );
+			window.removeEventListener( 'keyup', handleModalKeyCapture, true );
+		}
+	} );
+
+	function handleGlobalKeyDown( e: KeyboardEvent ): void {
+		if ( !open ) {
+			return;
+		}
+		if ( e.key === 'Escape' ) {
+			e.preventDefault();
+			e.stopPropagation();
+			handleModalClose();
+		}
+	}
+
+	$effect( () => {
+		if ( typeof window === 'undefined' ) {
+			return;
+		}
+
+		if ( open ) {
+			window.addEventListener( 'keydown', handleGlobalKeyDown, true );
+			return () => {
+				window.removeEventListener( 'keydown', handleGlobalKeyDown, true );
+			};
+		}
 	} );
 
 	function handleModalClose(): void {
+		open = false;
 		stopTimer();
 		if ( moment.metadata?.is_temporal && remainingMs !== null && remainingMs <= 0 && onRecordView ) {
 			onRecordView( moment.id );
 		}
-		remainingMs = null;
 		isDisintegrating = false;
+		isObscured = false;
+		handleMusicToggle( false, false );
 		if ( onClose ) {
 			onClose();
 		}
@@ -195,6 +384,12 @@
 					icon       : QuoteIcon as Component,
 					colorClass : 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/25'
 				};
+			case 'voice note':
+				return {
+					label      : 'Nota de Voz',
+					icon       : Headphones as Component,
+					colorClass : 'text-violet-600 dark:text-violet-400 bg-violet-500/10 border-violet-500/25'
+				};
 			default:
 				return {
 					label      : 'Recuerdo',
@@ -208,27 +403,54 @@
 <Dialog
 	bind:open={ open }
 	maxWidth="max-w-4xl"
+	contentClass="p-5 sm:p-7"
 	contentStyle={ dialogStyle }
+	showCloseButton={ false }
 	onClose={ handleModalClose }
 >
 	<!-- Contenedor Principal del Momento en Pantalla Completa -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div
-		class="relative transition-all duration-700 { isDisintegrating ? 'thanos-snap' : '' }"
+		class="relative transition-all duration-700 select-none { isDisintegrating ? 'thanos-snap' : '' }"
+		oncontextmenu={ ( e ) => { if ( moment.metadata?.is_temporal ) e.preventDefault(); } }
 	>
+		<!-- Escudo de Privacidad Activo Anti-Captura / Anti-Inspección -->
+		{#if isObscured}
+			<!-- svelte-ignore a11y_click_events_have_key_events -->
+			<!-- svelte-ignore a11y_no_static_element_interactions -->
+			<div
+				onclick={ handleResumeFromObscured }
+				class="absolute inset-0 z-50 flex flex-col items-center justify-center p-6 bg-white/95 dark:bg-stone-950/98 backdrop-blur-3xl text-center text-stone-900 dark:text-white cursor-pointer select-none space-y-2 rounded-2xl"
+			>
+				<div class="w-14 h-14 rounded-2xl bg-amber-500/20 text-amber-500 dark:text-amber-400 flex items-center justify-center border border-amber-500/30 animate-pulse shadow-xl">
+					<EyeOff size={ 26 } />
+				</div>
+				<div class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-rose-500/15 text-rose-600 dark:text-rose-300 text-[10px] font-extrabold uppercase tracking-widest border border-rose-500/25">
+					<span>Captura Bloqueada</span>
+				</div>
+				<h4 class="text-base font-extrabold text-stone-900 dark:text-white">Protección de Privacidad Activa</h4>
+				<p class="text-xs text-stone-500 dark:text-stone-400 max-w-sm leading-relaxed">
+					Por seguridad, este contenido confidencial se oculta automáticamente al detectar intentos de captura o pérdida de foco.
+				</p>
+				<span class="text-xs text-amber-600 dark:text-amber-400/80 font-semibold underline underline-offset-2">
+					Haz clic para continuar viendo
+				</span>
+			</div>
+		{/if}
+
 		<!-- Barra de Cuenta Regresiva de Mecha en la parte superior si es efímero -->
 		{#if moment.metadata?.is_temporal && secondsLeft > 0}
 			<div class="mb-4">
 				<MomentCountdownProgress
 					{secondsLeft}
 					{progressPercent}
-					showBadge={ true }
 				/>
 			</div>
 		{/if}
 
-		<!-- Cabecera de Autor, Fecha y Tags -->
+		<!-- Cabecera de Autor, Fecha, Tags y Botón Cerrar (X) -->
 		<div
-			class="flex flex-wrap items-center justify-between gap-3 pb-4 mb-4 border-b transition-colors { hasCustomBg ? '' : 'border-stone-100 dark:border-white/5' }"
+			class="flex flex-wrap items-center justify-between gap-3 pb-3 mb-4 border-b transition-colors { hasCustomBg ? '' : 'border-stone-100 dark:border-white/5' }"
 			style={ hasCustomBg ? `border-color: ${ hexColor }33;` : '' }
 		>
 			<div class="flex items-center gap-3">
@@ -253,52 +475,121 @@
 				</div>
 			</div>
 
-			<!-- Tags con Colores Semánticos -->
-			<div class="flex flex-wrap items-center gap-1.5">
-				{#each moment.tags as tag}
-					{@const badge = getTagBadge( tag )}
-					{@const TagIcon = badge.icon}
-					<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border shadow-2xs { badge.colorClass }">
-						<TagIcon size={ 12 } />
-						<span>{ badge.label }</span>
-					</span>
-				{/each}
+			<!-- Tags con Colores Semánticos, Música de Fondo y Botón Cerrar (X) -->
+			<div class="flex items-center gap-2 shrink-0">
+				<div class="flex flex-wrap items-center gap-1.5">
+					{#if open && moment.metadata?.youtubeVideoId}
+						<YouTubeBackgroundPlayer
+							videoId={ moment.metadata.youtubeVideoId }
+							controllerOnly={ true }
+							isPlaying={ isMusicPlaying && !isDisintegrating && !isObscured && ( !moment.metadata?.is_temporal || secondsLeft > 0 ) }
+							initialTime={ musicCurrentTime }
+							bind:userVolume={ musicVolume }
+							{isVoicePlaying}
+							{relationColor}
+							onTimeUpdate={ handleMusicTimeUpdate }
+							onTogglePlay={ ( playing: boolean ) => handleMusicToggle( playing, true ) }
+						/>
+					{/if}
 
-				{#if moment.metadata?.is_temporal}
-					<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/10 text-rose-500 border border-rose-500/25 shadow-2xs">
-						<Flame size={ 12 } />
-						<span>Efímero</span>
-					</span>
-				{/if}
+					{#each moment.tags as tag}
+						{@const badge = getTagBadge( tag )}
+						{@const TagIcon = badge.icon}
+						<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border shadow-2xs { badge.colorClass }">
+							<TagIcon size={ 12 } />
+							<span>{ badge.label }</span>
+						</span>
+					{/each}
+
+					{#if moment.metadata?.is_temporal}
+						<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/10 text-rose-500 border border-rose-500/25 shadow-2xs">
+							<Flame size={ 12 } />
+							<span>Efímero</span>
+						</span>
+					{/if}
+				</div>
+
+				<!-- Botón de Cerrar (X) al lado derecho de los tags -->
+				<Tooltip text="Cerrar (Esc)" side="bottom" sideOffset={ 6 }>
+					<button
+						type="button"
+						onclick={ handleModalClose }
+						class="size-8 rounded-xl flex items-center justify-center text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-white/5 border border-stone-200/50 dark:border-white/10 transition-all active:scale-90 cursor-pointer shrink-0 shadow-2xs ml-1"
+						aria-label="Cerrar modal (Esc)"
+					>
+						<X size={ 16 } />
+					</button>
+				</Tooltip>
 			</div>
 		</div>
 
-		<!-- Área Visual Multimedia / Texto -->
-		{#if moment.metadata?.imageUrl}
-			<div
-				class="w-full max-h-[65vh] flex items-center justify-center rounded-2xl overflow-hidden bg-stone-950/80 dark:bg-black/80 relative shadow-2xl mb-5"
-				style={ hasCustomBg ? `border: 1px solid ${ hexColor }30;` : '' }
-			>
-				<img
-					src={ moment.metadata.imageUrl }
-					alt={ moment.title || 'Foto de recuerdo' }
-					class="max-h-[65vh] w-auto max-w-full object-contain rounded-2xl"
+		<!-- Nota de Voz de Audio -->
+		{#if isVoiceNote && mediaUrl}
+			<div class="mb-5">
+				<AudioPlayer
+					src={ mediaUrl }
+					title={ moment.title || 'Nota de Voz' }
+					duration={ moment.metadata?.audioDuration || 0 }
+					{relationColor}
+					isExternalPaused={ isDisintegrating || isObscured || ( moment.metadata?.is_temporal && secondsLeft <= 0 ) }
+					resetTrigger={ audioResetTrigger }
+					onPlayStateChange={ ( isPlaying: boolean ) => ( isVoicePlaying = isPlaying ) }
 				/>
 			</div>
-		{:else if moment.metadata?.videoUrl}
+		{/if}
+
+		<!-- Área Visual Multimedia / Texto -->
+		{#if isImage && mediaUrl}
+			<!-- svelte-ignore a11y_no_static_element_interactions -->
 			<div
-				class="w-full max-h-[65vh] flex items-center justify-center rounded-2xl overflow-hidden bg-black relative shadow-2xl mb-5"
+				class="w-full max-h-[65vh] flex items-center justify-center rounded-2xl overflow-hidden bg-stone-950/80 dark:bg-black/80 relative shadow-2xl mb-5 select-none"
 				style={ hasCustomBg ? `border: 1px solid ${ hexColor }30;` : '' }
+				oncontextmenu={ ( e ) => { if ( moment.metadata?.is_temporal ) e.preventDefault(); } }
 			>
-				<!-- svelte-ignore a11y_media_has_caption -->
-				<video
-					src={ moment.metadata.videoUrl }
-					controls
-					autoplay
-					class="max-h-[65vh] w-auto max-w-full object-contain rounded-2xl"
-                    playsinline
-                    loop={ true }
-				></video>
+				{#if moment.metadata?.is_temporal}
+					<SecureEphemeralMedia
+						imageUrl={ mediaUrl }
+						alt={ moment.title || 'Foto de recuerdo' }
+						isEphemeral={ true }
+						isObscured={ isObscured }
+						fit="contain"
+						watermarkText={`${ memoriesStore.currentUser.name } • Confidencial`}
+					/>
+				{:else}
+					<img
+						src={ mediaUrl }
+						alt={ moment.title || 'Foto de recuerdo' }
+						class="max-h-[65vh] w-auto max-w-full object-contain rounded-2xl"
+					/>
+				{/if}
+			</div>
+		{:else if isVideo && mediaUrl}
+			<!-- svelte-ignore a11y_no_static_element_interactions -->
+			<div
+				class="w-full max-h-[65vh] flex items-center justify-center rounded-2xl overflow-hidden bg-black relative shadow-2xl mb-5 select-none"
+				style={ hasCustomBg ? `border: 1px solid ${ hexColor }30;` : '' }
+				oncontextmenu={ ( e ) => { if ( moment.metadata?.is_temporal ) e.preventDefault(); } }
+			>
+				{#if moment.metadata?.is_temporal}
+					<SecureEphemeralMedia
+						videoUrl={ mediaUrl }
+						alt={ moment.title || 'Video de recuerdo' }
+						isEphemeral={ true }
+						isObscured={ isObscured }
+						fit="contain"
+						watermarkText={`${ memoriesStore.currentUser.name } • Confidencial`}
+					/>
+				{:else}
+					<!-- svelte-ignore a11y_media_has_caption -->
+					<video
+						src={ mediaUrl }
+						controls
+						autoplay
+						class="max-h-[65vh] w-auto max-w-full object-contain rounded-2xl"
+						playsinline
+						loop={ true }
+					></video>
+				{/if}
 			</div>
 		{/if}
 
