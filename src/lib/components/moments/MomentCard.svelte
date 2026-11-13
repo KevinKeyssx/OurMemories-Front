@@ -17,17 +17,24 @@
 		Edit3,
 		RotateCcw,
 		EyeOff,
-		Maximize2
+		Maximize2,
+		Share2,
+		Headphones,
+		Hourglass,
+		Sparkles
 	} from '@lucide/svelte';
 
-    import type {
+	import type {
 		MomentEntity,
 		MomentTag
-	} from '$lib/types';
+	}                               from '$lib/types';
 	import MomentEphemeralCover     from './MomentEphemeralCover.svelte';
 	import SecureEphemeralMedia     from './SecureEphemeralMedia.svelte';
 	import MomentCountdownProgress  from './MomentCountdownProgress.svelte';
 	import MomentDetailModal        from './MomentDetailModal.svelte';
+	import ShareMomentModal         from './ShareMomentModal.svelte';
+	import AudioPlayer              from './AudioPlayer.svelte';
+	import YouTubeBackgroundPlayer  from './YouTubeBackgroundPlayer.svelte';
 	import Tooltip                  from '$lib/components/shared/Tooltip.svelte';
 	import { formatCaptureDate }    from '$lib/utils/date';
 	import { memoriesStore }        from '$lib/store.svelte';
@@ -36,6 +43,7 @@
 		moment         : MomentEntity;
 		currentUserId  : string;
 		relationColor ?: string;
+		relationPath  ?: string;
 		isViewed      ?: boolean;
 		onDelete      ?: ( id: string ) => void;
 		onEdit        ?: ( moment: MomentEntity ) => void;
@@ -47,6 +55,7 @@
 		moment,
 		currentUserId,
 		relationColor = '#f43f5e',
+		relationPath = 'pareja',
 		isViewed = false,
 		onDelete,
 		onEdit,
@@ -54,47 +63,226 @@
 		onRecordView
 	}: Props = $props();
 
-	let isManuallyUnlocked     = $state<boolean>( false );
-	let isEphemeralRevealed    = $state<boolean>( false );
-	let isHolding              = $state<boolean>( false );
-	let isLocalReplayActive    = $state<boolean>( false );
-	let remainingMs            = $state<number | null>( null );
-	let isObscured             = $state<boolean>( false );
-	let isViewerOpen           = $state<boolean>( false );
-	let passwordSecondsLeft    = $state<number | undefined>( undefined );
-	let passwordTimerInterval  = $state<ReturnType<typeof setInterval> | null>( null );
+	interface MomentCardState {
+		isManuallyUnlocked    : boolean;
+		isEphemeralRevealed   : boolean;
+		isHolding             : boolean;
+		isLocalReplayActive   : boolean;
+		remainingMs           : number | null;
+		isObscured            : boolean;
+		isViewerOpen          : boolean;
+		passwordSecondsLeft   : number | undefined;
+		isVoicePlaying        : boolean;
+		backgroundMusicSec    : number;
+		musicVolume           : number;
+		isMusicPlaying        : boolean;
+		isMusicManuallyPaused : boolean;
+		audioResetTrigger     : number;
+		audioAutoplayTrigger  : number;
+		nowTime               : number;
+	}
 
-    let animFrameId: number | null   = null;
+	let cardState: MomentCardState = $state( {
+		isManuallyUnlocked    : false,
+		isEphemeralRevealed   : false,
+		isHolding             : false,
+		isLocalReplayActive   : false,
+		remainingMs           : null,
+		isObscured            : false,
+		isViewerOpen          : false,
+		passwordSecondsLeft   : undefined,
+		isVoicePlaying        : false,
+		backgroundMusicSec    : 0,
+		musicVolume           : 60,
+		isMusicPlaying        : false,
+		isMusicManuallyPaused : false,
+		audioResetTrigger     : 0,
+		audioAutoplayTrigger  : 0,
+		nowTime               : Date.now()
+	} );
+
+	let animFrameId: number | null = null;
 	let lastTimestamp: number | null = null;
+	let passwordTimerInterval: ReturnType<typeof setInterval> | null = null;
+	let lastViewerOpen = $state<boolean>( false );
+	let cardContainerEl = $state<HTMLDivElement | null>( null );
+	let isShareOpen = $state<boolean>( false );
 
-	const isUnlocked        = $derived<boolean>( !moment.metadata?.password || isManuallyUnlocked || memoriesStore.isMomentUnlocked( moment.id ) );
-	const isCreator         = $derived<boolean>( Boolean( moment.created_by && moment.created_by === currentUserId ) );
-	const isSuperAdmin      = $derived<boolean>( memoriesStore.currentUser.role === 'super_admin' );
-	const canEdit           = $derived<boolean>( memoriesStore.canEditMoment( moment ) );
-	const canDelete         = $derived<boolean>( memoriesStore.canDeleteMoment( moment ) );
-	const canReplay         = $derived<boolean>( Boolean( moment.metadata?.is_temporal && ( isSuperAdmin || isCreator ) ) );
-	const hasCustomBg       = $derived<boolean>( Boolean( moment.metadata?.bgColor ) );
-	const customBgColor     = $derived<string>( moment.metadata?.bgColor || '#7C3AED' );
-	const hasMedia          = $derived<boolean>( Boolean( moment.metadata?.imageUrl || moment.metadata?.videoUrl ) );
-	const totalDuration     = $derived<number>( moment.metadata?.timer || 5 );
-	const totalDurationMs   = $derived<number>( totalDuration * 1000 );
-	const currentRemainingMs = $derived<number>(
-		remainingMs !== null ? remainingMs : totalDurationMs
+	const isFutureLocked = $derived<boolean>(
+		Boolean( moment.metadata?.unlock_at && new Date() < new Date( moment.metadata.unlock_at ) )
 	);
-	const secondsLeft       = $derived<number>( Math.max( 0, Math.ceil( currentRemainingMs / 1000 ) ) );
-	const progressPercent   = $derived<number>(
+
+	const futureSecondsLeft = $derived<number>(
+		moment.metadata?.unlock_at
+			? Math.max( 0, Math.floor( ( new Date( moment.metadata.unlock_at ).getTime() - cardState.nowTime ) / 1000 ) )
+			: 0
+	);
+
+	$effect( () => {
+		if ( isFutureLocked ) {
+			const interval = setInterval( () => {
+				cardState.nowTime = Date.now();
+			}, 1000 );
+			return () => clearInterval( interval );
+		}
+	} );
+
+	// Cuando se cierra el modal con tiempo restante, pausar efímero y música en la tarjeta hasta nuevo hover/foco
+	$effect( () => {
+		if ( lastViewerOpen && !cardState.isViewerOpen ) {
+			lastViewerOpen = false;
+			if ( moment.metadata?.is_temporal && secondsLeft > 0 ) {
+				cardState.isEphemeralRevealed = false;
+				cardState.isMusicPlaying = false;
+				stopTimer();
+			}
+		} else if ( cardState.isViewerOpen ) {
+			lastViewerOpen = true;
+		}
+	} );
+
+	let hasCheckedUrlDeepLink = $state<boolean>( false );
+
+	// Apertura automática inicial si la URL contiene el parámetro ?moment=ID
+	$effect( () => {
+		if ( typeof window === 'undefined' || hasCheckedUrlDeepLink ) {
+			return;
+		}
+
+		hasCheckedUrlDeepLink = true;
+		const currentUrl = new URL( window.location.href );
+		const currentMomentParam = currentUrl.searchParams.get( 'moment' );
+
+		// Si la URL contiene el ID de este momento y no está abierto, abrirlo
+		if ( currentMomentParam === moment.id && !cardState.isViewerOpen ) {
+			if ( moment.metadata?.password && !isUnlocked ) {
+				handleUnlockRequest();
+			} else if ( isPlaybackAllowed || !effectiveIsViewed ) {
+				handleOpenViewer();
+			}
+		}
+	} );
+
+	// Sincronización del parámetro en la URL al abrir o cerrar el visor
+	$effect( () => {
+		if ( typeof window === 'undefined' ) {
+			return;
+		}
+
+		const isOpen = cardState.isViewerOpen;
+		const currentUrl = new URL( window.location.href );
+		const currentMomentParam = currentUrl.searchParams.get( 'moment' );
+
+		if ( isOpen ) {
+			if ( currentMomentParam !== moment.id ) {
+				currentUrl.searchParams.set( 'moment', moment.id );
+				window.history.replaceState( window.history.state, '', currentUrl.toString() );
+			}
+		} else {
+			if ( currentMomentParam === moment.id ) {
+				currentUrl.searchParams.delete( 'moment' );
+				window.history.replaceState( window.history.state, '', currentUrl.toString() );
+			}
+		}
+	} );
+
+	function formatUnlockDate( isoStr: string ): string {
+		try {
+			const d = new Date( isoStr );
+			return d.toLocaleString( 'es-ES', {
+				day    : 'numeric',
+				month  : 'short',
+				year   : 'numeric',
+				hour   : '2-digit',
+				minute : '2-digit'
+			} );
+		} catch {
+			return isoStr;
+		}
+	}
+
+	function formatFutureCountdown( totalSecs: number ): string {
+		const days = Math.floor( totalSecs / 86400 );
+		const hours = Math.floor( ( totalSecs % 86400 ) / 3600 );
+		const mins = Math.floor( ( totalSecs % 3600 ) / 60 );
+		const secs = totalSecs % 60;
+		if ( days > 0 ) {
+			return `${ days }d ${ hours }h ${ mins }m`;
+		}
+		if ( hours > 0 ) {
+			return `${ hours }h ${ mins }m ${ secs }s`;
+		}
+		return `${ mins }m ${ secs }s`;
+	}
+
+	const isUnlocked = $derived<boolean>(
+		!moment.metadata?.password || cardState.isManuallyUnlocked || memoriesStore.isMomentUnlocked( moment.id )
+	);
+	const isCreator = $derived<boolean>( Boolean( moment.created_by && moment.created_by === currentUserId ) );
+	const isSuperAdmin = $derived<boolean>( memoriesStore.currentUser.role === 'super_admin' );
+	const canEdit = $derived<boolean>( memoriesStore.canEditMoment( moment ) );
+	const canDelete = $derived<boolean>( memoriesStore.canDeleteMoment( moment ) );
+	const canReplay = $derived<boolean>( Boolean( moment.metadata?.is_temporal && isSuperAdmin ) );
+	const hasCustomBg = $derived<boolean>( Boolean( moment.metadata?.bgColor ) );
+	const customBgColor = $derived<string>( moment.metadata?.bgColor || '#7C3AED' );
+	const mediaUrl = $derived<string>(
+		( moment.metadata?.url || '' ).trim()
+	);
+	const isVoiceNote = $derived<boolean>(
+		Boolean( moment.tags?.includes( 'voice note' ) || ( mediaUrl && ( mediaUrl.startsWith( 'data:audio' ) || mediaUrl.endsWith( '.mp3' ) || mediaUrl.endsWith( '.wav' ) || mediaUrl.endsWith( '.ogg' ) || mediaUrl.endsWith( '.webm' ) ) ) )
+	);
+	const isVideo = $derived<boolean>(
+		Boolean( moment.tags?.includes( 'video' ) || ( !isVoiceNote && ( mediaUrl.includes( 'youtube.com' ) || mediaUrl.includes( 'youtu.be' ) || mediaUrl.endsWith( '.mp4' ) || mediaUrl.endsWith( '.mov' ) ) ) )
+	);
+	const isImage = $derived<boolean>(
+		Boolean( !isVoiceNote && !isVideo && ( moment.tags?.includes( 'image' ) || mediaUrl ) )
+	);
+	const hasMedia = $derived<boolean>( Boolean( mediaUrl && ( isImage || isVideo ) ) );
+	const defaultDuration = $derived<number>(
+		isVoiceNote && moment.metadata?.audioDuration
+			? Math.max( 5, Math.ceil( moment.metadata.audioDuration ) )
+			: ( isVideo && moment.metadata?.videoDuration ? Math.max( 5, Math.ceil( moment.metadata.videoDuration ) ) : 5 )
+	);
+	const totalDuration = $derived<number>( moment.metadata?.timer || defaultDuration );
+	const totalDurationMs = $derived<number>( totalDuration * 1000 );
+	const currentRemainingMs = $derived<number>(
+		cardState.remainingMs !== null ? cardState.remainingMs : totalDurationMs
+	);
+	const secondsLeft = $derived<number>( Math.max( 0, Math.ceil( currentRemainingMs / 1000 ) ) );
+	const progressPercent = $derived<number>(
 		Math.max( 0, Math.min( 100, ( currentRemainingMs / totalDurationMs ) * 100 ) )
 	);
 	const effectiveIsViewed = $derived<boolean>(
-		isLocalReplayActive ? false : Boolean( isViewed || currentRemainingMs <= 0 )
+		cardState.isLocalReplayActive ? false : Boolean( isViewed || ( moment.id && memoriesStore.isMomentViewed( moment.id, currentUserId ) ) || ( cardState.remainingMs !== null && cardState.remainingMs <= 0 ) )
 	);
 
 	const shouldShowEphemeralCover = $derived<boolean>(
-		Boolean( moment.metadata?.is_temporal && ( !isEphemeralRevealed || !isHolding ) )
+		Boolean(
+			moment.metadata?.is_temporal &&
+			( effectiveIsViewed || !cardState.isEphemeralRevealed )
+		)
 	);
 
+	const isPlaybackAllowed = $derived<boolean>(
+		isUnlocked &&
+		!cardState.isObscured &&
+		(
+			cardState.isViewerOpen
+				? ( !moment.metadata?.is_temporal || ( cardState.remainingMs === null || cardState.remainingMs > 0 ) )
+				: ( !shouldShowEphemeralCover && !effectiveIsViewed )
+		)
+	);
+
+	function stopAndResetAllAudio(): void {
+		cardState.isMusicPlaying = false;
+		cardState.backgroundMusicSec = 0;
+		cardState.isVoicePlaying = false;
+		cardState.isMusicManuallyPaused = false;
+		cardState.audioResetTrigger += 1;
+	}
+
 	function stepTimer( now: number ): void {
-		if ( !isHolding || isObscured ) {
+		if ( !cardState.isEphemeralRevealed || cardState.isObscured ) {
 			lastTimestamp = null;
 			animFrameId = null;
 			return;
@@ -102,16 +290,16 @@
 
 		if ( lastTimestamp !== null ) {
 			const elapsed = now - lastTimestamp;
-			const updated = Math.max( 0, ( remainingMs ?? totalDurationMs ) - elapsed );
-			remainingMs = updated;
+			const updated = Math.max( 0, ( cardState.remainingMs ?? totalDurationMs ) - elapsed );
+			cardState.remainingMs = updated;
 
 			if ( updated <= 0 ) {
-				remainingMs = 0;
-				isHolding = false;
-				isEphemeralRevealed = false;
-				isLocalReplayActive = false;
+				cardState.remainingMs = 0;
+				cardState.isEphemeralRevealed = false;
+				cardState.isLocalReplayActive = false;
 				lastTimestamp = null;
 				animFrameId = null;
+				stopAndResetAllAudio();
 				if ( onRecordView ) {
 					onRecordView( moment.id );
 				}
@@ -145,109 +333,161 @@
 			return;
 		}
 
-		passwordSecondsLeft = moment.metadata.timer;
+		cardState.passwordSecondsLeft = moment.metadata.timer;
 		passwordTimerInterval = setInterval( () => {
-			if ( passwordSecondsLeft && passwordSecondsLeft > 1 ) {
-				passwordSecondsLeft -= 1;
+			if ( cardState.passwordSecondsLeft && cardState.passwordSecondsLeft > 1 ) {
+				cardState.passwordSecondsLeft -= 1;
 			} else {
 				if ( passwordTimerInterval ) {
 					clearInterval( passwordTimerInterval );
 					passwordTimerInterval = null;
 				}
-				isManuallyUnlocked = false;
+				cardState.isManuallyUnlocked = false;
 				memoriesStore.lockMoment( moment.id );
-				passwordSecondsLeft = 0;
+				cardState.passwordSecondsLeft = 0;
+				stopAndResetAllAudio();
 			}
 		}, 1000 );
 	}
 
-	function handleStartHolding(): void {
-		if ( isObscured || currentRemainingMs <= 0 ) {
+	function handleStartEphemeralView(): void {
+		if ( cardState.isObscured || currentRemainingMs <= 0 || effectiveIsViewed ) {
 			return;
 		}
 
-		if ( remainingMs === null ) {
-			remainingMs = totalDurationMs;
+		if ( cardState.remainingMs === null ) {
+			cardState.remainingMs = totalDurationMs;
 		}
 
-		isHolding = true;
-		isEphemeralRevealed = true;
+		cardState.isEphemeralRevealed = true;
+
+		if ( !cardState.isMusicManuallyPaused && moment.metadata?.youtubeVideoId ) {
+			cardState.isMusicPlaying = true;
+		}
 
 		startTimer();
 	}
 
-	function handleStopHolding(): void {
-		if ( !isHolding ) {
+	function handlePauseEphemeralView(): void {
+		if ( !moment.metadata?.is_temporal || effectiveIsViewed || cardState.isViewerOpen ) {
 			return;
 		}
 
-		isHolding = false;
-		stopTimer();
+		if ( !cardState.isEphemeralRevealed ) {
+			return;
+		}
 
-		if ( currentRemainingMs > 0 ) {
-			isEphemeralRevealed = false;
+		cardState.isEphemeralRevealed = false;
+		cardState.isMusicPlaying = false;
+		stopTimer();
+	}
+
+	function handleResumeEphemeralView(): void {
+		if ( !moment.metadata?.is_temporal || effectiveIsViewed || cardState.isViewerOpen || cardState.isObscured ) {
+			return;
+		}
+
+		if ( cardState.remainingMs === null ) {
+			cardState.remainingMs = totalDurationMs;
+		}
+
+		if ( cardState.remainingMs > 0 ) {
+			cardState.isEphemeralRevealed = true;
+			startTimer();
+
+			if ( !cardState.isMusicManuallyPaused && moment.metadata?.youtubeVideoId ) {
+				cardState.isMusicPlaying = true;
+			}
 		}
 	}
 
 	function handleSuperAdminReplay(): void {
+		if ( !isSuperAdmin ) {
+			return;
+		}
+
 		memoriesStore.resetMomentViewForUser( moment.id, currentUserId );
-		isLocalReplayActive = true;
-		remainingMs = totalDurationMs;
-		isObscured = false;
-		isHolding = true;
-		isEphemeralRevealed = true;
+		cardState.isLocalReplayActive = true;
+		cardState.remainingMs = totalDurationMs;
+		cardState.isObscured = false;
+		cardState.isEphemeralRevealed = true;
+
+		stopAndResetAllAudio();
+
+		cardState.isMusicManuallyPaused = false;
+		if ( moment.metadata?.youtubeVideoId ) {
+			cardState.isMusicPlaying = true;
+		}
+
+		if ( isVoiceNote ) {
+			cardState.audioAutoplayTrigger += 1;
+		}
 
 		startTimer();
 	}
 
-	function handleCardWindowBlur(): void {
-		if ( isViewerOpen ) {
-			return;
-		}
-		if ( moment.metadata?.is_temporal && ( isEphemeralRevealed || isHolding ) ) {
-			isObscured = true;
-			handleStopHolding();
+	function handleResumeFromObscured(): void {
+		cardState.isObscured = false;
+		if ( cardState.remainingMs !== null && cardState.remainingMs > 0 ) {
+			handleResumeEphemeralView();
 		}
 	}
 
-	function handleCardWindowFocus(): void {
-		if ( moment.metadata?.is_temporal ) {
-			isObscured = false;
+	function handleCardWindowBlur(): void {
+		if ( cardState.isViewerOpen ) {
+			return;
+		}
+		if ( moment.metadata?.is_temporal && cardState.isEphemeralRevealed ) {
+			handlePauseEphemeralView();
+		} else {
+			cardState.isMusicPlaying = false;
+		}
+	}
+
+	function handleDocumentPointerDown( e: PointerEvent ): void {
+		if ( cardState.isViewerOpen || !cardState.isEphemeralRevealed || !moment.metadata?.is_temporal || effectiveIsViewed ) {
+			return;
+		}
+		const target = e.target as HTMLElement | null;
+		if ( cardContainerEl && target && !cardContainerEl.contains( target ) ) {
+			handlePauseEphemeralView();
 		}
 	}
 
 	function handleCardVisibilityChange(): void {
-		if ( isViewerOpen ) {
-			return;
-		}
-		if ( moment.metadata?.is_temporal && document.hidden ) {
-			if ( isEphemeralRevealed || isHolding ) {
-				isObscured = true;
-				handleStopHolding();
+		if ( document.hidden ) {
+			if ( cardState.isViewerOpen ) {
+				return;
 			}
-		} else if ( moment.metadata?.is_temporal && !document.hidden ) {
-			isObscured = false;
+			if ( moment.metadata?.is_temporal && cardState.isEphemeralRevealed ) {
+				handlePauseEphemeralView();
+			} else {
+				cardState.isMusicPlaying = false;
+			}
 		}
 	}
 
 	function handleCardKeyCapture( e: KeyboardEvent ): void {
-		if ( !moment.metadata?.is_temporal || isViewerOpen ) {
+		if ( !moment.metadata?.is_temporal || cardState.isViewerOpen ) {
 			return;
 		}
 
-		// Solo interceptar si el usuario está activamente viendo el contenido en la tarjeta
-		if ( !isHolding && !isEphemeralRevealed ) {
+		if ( !cardState.isEphemeralRevealed && !cardState.isLocalReplayActive ) {
 			return;
 		}
 
-		// Ignorar si el usuario está escribiendo en un input, textarea o modal de contraseña
 		const target = e.target as HTMLElement | null;
 		if ( target && ( target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable ) ) {
 			return;
 		}
 
-		// Detección y bloqueo reactivo de captura de pantalla
+		const isDevToolsKey =
+			e.key === 'F12' ||
+			( ( e.ctrlKey || e.metaKey ) && e.shiftKey && ( e.key === 'I' || e.key === 'i' || e.key === 'C' || e.key === 'c' || e.key === 'J' || e.key === 'j' ) ) ||
+			( ( e.ctrlKey || e.metaKey ) && ( e.key === 'u' || e.key === 'U' ) );
+
 		const isCaptureOrModifierKey =
+			isDevToolsKey ||
 			e.key === 'PrintScreen' ||
 			e.code === 'PrintScreen' ||
 			e.keyCode === 44 ||
@@ -255,8 +495,13 @@
 			( e.shiftKey && ( e.metaKey || ( e.ctrlKey && ( e.key === 's' || e.key === 'S' ) ) ) );
 
 		if ( isCaptureOrModifierKey ) {
-			isObscured = true;
-			handleStopHolding();
+			if ( isDevToolsKey ) {
+				e.preventDefault();
+				e.stopPropagation();
+			}
+			cardState.isObscured = true;
+			stopTimer();
+			cardState.isMusicPlaying = false;
 
 			try {
 				navigator.clipboard?.writeText( '' );
@@ -265,7 +510,7 @@
 	}
 
 	$effect( () => {
-		if ( !moment.metadata?.is_temporal && isUnlocked && moment.metadata?.timer && !passwordTimerInterval && passwordSecondsLeft === undefined ) {
+		if ( !moment.metadata?.is_temporal && isUnlocked && moment.metadata?.timer && !passwordTimerInterval && cardState.passwordSecondsLeft === undefined ) {
 			startPasswordTimer();
 		}
 	} );
@@ -277,21 +522,17 @@
 
 		if ( moment.metadata?.is_temporal && !effectiveIsViewed ) {
 			window.addEventListener( 'blur', handleCardWindowBlur );
-			window.addEventListener( 'focus', handleCardWindowFocus );
+			window.addEventListener( 'pointerdown', handleDocumentPointerDown );
 			document.addEventListener( 'visibilitychange', handleCardVisibilityChange );
 			window.addEventListener( 'keydown', handleCardKeyCapture );
 			window.addEventListener( 'keyup', handleCardKeyCapture );
-			window.addEventListener( 'pointerup', handleStopHolding );
-			window.addEventListener( 'pointercancel', handleStopHolding );
 
 			return () => {
 				window.removeEventListener( 'blur', handleCardWindowBlur );
-				window.removeEventListener( 'focus', handleCardWindowFocus );
+				window.removeEventListener( 'pointerdown', handleDocumentPointerDown );
 				document.removeEventListener( 'visibilitychange', handleCardVisibilityChange );
 				window.removeEventListener( 'keydown', handleCardKeyCapture );
 				window.removeEventListener( 'keyup', handleCardKeyCapture );
-				window.removeEventListener( 'pointerup', handleStopHolding );
-				window.removeEventListener( 'pointercancel', handleStopHolding );
 			};
 		}
 	} );
@@ -303,12 +544,10 @@
 		}
 		if ( typeof window !== 'undefined' ) {
 			window.removeEventListener( 'blur', handleCardWindowBlur );
-			window.removeEventListener( 'focus', handleCardWindowFocus );
+			window.removeEventListener( 'pointerdown', handleDocumentPointerDown );
 			document.removeEventListener( 'visibilitychange', handleCardVisibilityChange );
 			window.removeEventListener( 'keydown', handleCardKeyCapture );
 			window.removeEventListener( 'keyup', handleCardKeyCapture );
-			window.removeEventListener( 'pointerup', handleStopHolding );
-			window.removeEventListener( 'pointercancel', handleStopHolding );
 		}
 	} );
 
@@ -344,6 +583,12 @@
 					icon       : QuoteIcon as Component,
 					colorClass : 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/25'
 				};
+			case 'voice note':
+				return {
+					label      : 'Nota de Voz',
+					icon       : Headphones as Component,
+					colorClass : 'text-violet-600 dark:text-violet-400 bg-violet-500/10 border-violet-500/25'
+				};
 			default:
 				return {
 					label      : 'Recuerdo',
@@ -357,19 +602,28 @@
 		if ( e ) {
 			e.stopPropagation();
 		}
+		if ( isFutureLocked ) {
+			return;
+		}
 		if ( moment.metadata?.password && !isUnlocked ) {
 			handleUnlockRequest();
 			return;
 		}
-		isObscured = false;
-		if ( isHolding ) {
-			handleStopHolding();
+		cardState.isObscured = false;
+		if ( moment.metadata?.is_temporal ) {
+			stopTimer();
+			if ( cardState.remainingMs === null ) {
+				cardState.remainingMs = totalDurationMs;
+			}
 		}
-		isViewerOpen = true;
+		if ( moment.metadata?.youtubeVideoId && !cardState.isMusicManuallyPaused ) {
+			cardState.isMusicPlaying = true;
+		}
+		cardState.isViewerOpen = true;
 	}
 
 	function handleCardContentClick( e: MouseEvent ): void {
-		if ( isObscured || shouldShowEphemeralCover ) {
+		if ( cardState.isObscured || shouldShowEphemeralCover || isFutureLocked ) {
 			return;
 		}
 		if ( moment.metadata?.password && !isUnlocked ) {
@@ -377,23 +631,78 @@
 			return;
 		}
 		const target = e.target as HTMLElement;
-		if ( target.closest( 'button' ) || target.closest( 'video' ) ) {
+		if ( target.closest( 'button' ) || target.closest( 'video' ) || target.closest( 'audio' ) || target.closest( 'input' ) ) {
 			return;
 		}
-		isObscured = false;
-		if ( isHolding ) {
-			handleStopHolding();
+		cardState.isObscured = false;
+		cardState.isViewerOpen = true;
+	}
+
+	function handleCardMouseEnter(): void {
+		if ( cardState.isViewerOpen ) {
+			return;
 		}
-		isViewerOpen = true;
+		if ( moment.metadata?.is_temporal ) {
+			if ( cardState.remainingMs !== null && cardState.remainingMs > 0 && !effectiveIsViewed ) {
+				handleResumeEphemeralView();
+			}
+		} else if (
+			!cardState.isMusicManuallyPaused &&
+			!shouldShowEphemeralCover &&
+			!effectiveIsViewed &&
+			isUnlocked &&
+			moment.metadata?.youtubeVideoId
+		) {
+			cardState.isMusicPlaying = true;
+		}
+	}
+
+	function handleCardMouseLeave(): void {
+		if ( cardState.isViewerOpen ) {
+			return;
+		}
+		if ( moment.metadata?.is_temporal ) {
+			if ( cardState.isEphemeralRevealed && !effectiveIsViewed ) {
+				handlePauseEphemeralView();
+			}
+		} else {
+			cardState.isMusicPlaying = false;
+		}
+	}
+
+	function handleMusicToggle( playing: boolean, manual = true ): void {
+		cardState.isMusicPlaying = playing;
+		if ( manual ) {
+			cardState.isMusicManuallyPaused = !playing;
+		}
+	}
+
+	function handleOpenShare( e?: MouseEvent ): void {
+		if ( e ) {
+			e.stopPropagation();
+		}
+		isShareOpen = true;
+	}
+
+	function handleCloseViewer(): void {
+		cardState.isViewerOpen = false;
+		if ( typeof window !== 'undefined' ) {
+			const currentUrl = new URL( window.location.href );
+			if ( currentUrl.searchParams.get( 'moment' ) === moment.id ) {
+				currentUrl.searchParams.delete( 'moment' );
+				window.history.replaceState( window.history.state, '', currentUrl.toString() );
+			}
+		}
 	}
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
-	onpointerleave={handleStopHolding}
-	onpointerup={handleStopHolding}
-	onpointercancel={handleStopHolding}
-	class="group relative flex flex-col justify-between rounded-3xl overflow-hidden transition-all duration-500 backdrop-blur-md shadow-lg hover:shadow-2xl min-h-72.5 w-full { hasCustomBg ? 'bg-white/75 dark:bg-dark-card/75' : 'bg-white/70 dark:bg-dark-card/70 border border-stone-200/60 dark:border-white/10' }"
+	bind:this={ cardContainerEl }
+	onmouseenter={ handleCardMouseEnter }
+	onmouseleave={ handleCardMouseLeave }
+	oncontextmenu={ ( e ) => { if ( moment.metadata?.is_temporal ) e.preventDefault(); } }
+	class="group relative flex flex-col justify-between rounded-3xl overflow-hidden transition-all duration-500 backdrop-blur-md shadow-lg hover:shadow-2xl min-h-72.5 w-full select-none { hasCustomBg ? 'bg-white/75 dark:bg-dark-card/75' : 'bg-white/70 dark:bg-dark-card/70 border border-stone-200/60 dark:border-white/10' }"
 	style={ hasCustomBg ? `border: 1px solid ${ customBgColor }40; box-shadow: 0 10px 30px -10px ${ customBgColor }33;` : '' }
 >
 	{#if hasCustomBg}
@@ -414,26 +723,96 @@
 		></div>
 	{/if}
 
+	<!-- Botón interno de Volver a Ver (Solo Super Admin) -->
+	{#if canReplay}
+		<div class="absolute top-2.5 left-2.5 z-20 { cardState.isViewerOpen ? 'pointer-events-none opacity-0' : '' }">
+			<Tooltip text="Volver a ver momento efímero (Super Admin)" side="bottom" sideOffset={ 6 }>
+				<button
+					type="button"
+					onclick={ ( e ) => {
+						e.stopPropagation();
+						handleSuperAdminReplay();
+					} }
+					class="size-7 rounded-xl flex items-center justify-center bg-amber-500/85 hover:bg-amber-500 text-stone-950 backdrop-blur-md border border-amber-300/40 shadow-lg transition-all active:scale-90 cursor-pointer"
+					aria-label="Volver a ver momento efímero (Super Admin)"
+				>
+					<RotateCcw size={ 13 } />
+				</button>
+			</Tooltip>
+		</div>
+	{/if}
+
+	<!-- Cubierta Cápsula del Tiempo (Desbloqueo a Futuro) -->
+	{#if isFutureLocked}
+		<div class="absolute inset-0 z-25 flex flex-col items-center justify-center p-6 text-center backdrop-blur-2xl bg-stone-900/90 text-white select-none space-y-3 overflow-hidden">
+			<!-- Resplandor ambiental de cápsula -->
+			<div
+				class="absolute -top-12 -left-12 w-44 h-44 rounded-full opacity-30 blur-3xl pointer-events-none animate-pulse"
+				style="background: { relationColor };"
+			></div>
+
+			<div
+				class="w-14 h-14 rounded-2xl flex items-center justify-center shadow-xl breathing-lock"
+				style="background: linear-gradient(135deg, { relationColor }, { relationColor }cc); box-shadow: 0 10px 25px -5px { relationColor }66;"
+			>
+				<Hourglass size={ 26 } class="text-white" />
+			</div>
+
+			<div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-white/10 text-white border border-white/15 uppercase tracking-wider backdrop-blur-sm">
+				<Sparkles size={ 12 } class="text-amber-300" />
+				<span>Cápsula del Tiempo</span>
+			</div>
+
+			<h4 class="text-sm font-extrabold text-white">Momento Programado</h4>
+			<p class="text-xs text-stone-300 max-w-xs leading-relaxed">
+				Este momento fue sellado y se revelará el <span class="font-bold text-white">{ formatUnlockDate( moment.metadata?.unlock_at || '' ) }</span>.
+			</p>
+
+			<div class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-black/50 border border-white/15 font-mono text-xs font-bold text-amber-300 shadow-inner">
+				<Clock size={ 14 } class="animate-pulse text-amber-300" />
+				<span>Abre en: { formatFutureCountdown( futureSecondsLeft ) }</span>
+			</div>
+		</div>
+	{/if}
+
+	<!-- Música de fondo de YouTube (Motor de Audio centralizado para tarjeta y modal) -->
+	{#if moment.metadata?.youtubeVideoId && !isFutureLocked}
+		<div class="absolute top-2.5 right-2.5 z-20 { cardState.isViewerOpen ? 'pointer-events-none opacity-0' : '' }">
+			<YouTubeBackgroundPlayer
+				videoId={ moment.metadata.youtubeVideoId }
+				isPlaying={ cardState.isMusicPlaying && isPlaybackAllowed }
+				initialTime={ cardState.backgroundMusicSec }
+				bind:userVolume={ cardState.musicVolume }
+				volumeOrientation="vertical"
+				resetTrigger={ cardState.audioResetTrigger }
+				isVoicePlaying={ cardState.isVoicePlaying }
+				{relationColor}
+				onTimeUpdate={ ( sec: number ) => ( cardState.backgroundMusicSec = sec ) }
+				onTogglePlay={ handleMusicToggle }
+			/>
+		</div>
+	{/if}
+
 	<!-- Cubierta efímera para momentos de 'ver una sola vez' -->
 	{#if shouldShowEphemeralCover}
 		<MomentEphemeralCover
-			isViewed={effectiveIsViewed}
-			canReplay={canReplay}
-			bgColor={customBgColor}
-			secondsLeft={secondsLeft}
-			totalDuration={totalDuration}
-			onStartHolding={handleStartHolding}
-			onStopHolding={handleStopHolding}
-			onReplay={handleSuperAdminReplay}
+			isViewed={ effectiveIsViewed }
+			canReplay={ canReplay }
+			bgColor={ customBgColor }
+			secondsLeft={ secondsLeft }
+			totalDuration={ totalDuration }
+			onReveal={ handleResumeEphemeralView }
+			onStartHolding={ handleResumeEphemeralView }
+			onReplay={ handleSuperAdminReplay }
 		/>
 	{/if}
 
 	<!-- Escudo reactivo Anti-capturas y Anti-recortes de pantalla -->
-	{#if isObscured}
+	{#if cardState.isObscured}
 		<!-- svelte-ignore a11y_click_events_have_key_events -->
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div
-			onclick={() => { isObscured = false; }}
+			onclick={ handleResumeFromObscured }
 			class="absolute inset-x-0 top-0 bottom-11.25 z-50 flex flex-col items-center justify-center p-5 bg-white/95 dark:bg-stone-950/98 backdrop-blur-3xl text-center text-stone-900 dark:text-white cursor-pointer select-none space-y-2"
 		>
 			<div class="w-12 h-12 rounded-xl bg-amber-500/20 text-amber-500 dark:text-amber-400 flex items-center justify-center border border-amber-500/30 animate-pulse shadow-xl">
@@ -452,20 +831,6 @@
 		</div>
 	{/if}
 
-	<!-- Contador flotante visible para momentos efímeros en visualización -->
-	{#if isEphemeralRevealed && isHolding && secondsLeft > 0}
-		<div class="absolute { hasMedia ? 'top-3' : 'bottom-20' } left-3 right-3 z-30 flex items-center justify-between px-3.5 py-2 rounded-2xl bg-amber-500/90 text-stone-950 backdrop-blur-md shadow-xl border border-amber-300/40 animate-pulse">
-			<div class="flex items-center gap-1.5 font-black text-xs tracking-tight">
-				<Flame size={ 16 } class="animate-bounce" />
-				<span>Momento Efímero</span>
-			</div>
-			<div class="flex items-center gap-1.5 font-black text-xs bg-black/20 px-2.5 py-0.5 rounded-full text-white">
-				<Clock size={ 13 } />
-				<span>{ secondsLeft }s restantes</span>
-			</div>
-		</div>
-	{/if}
-
 	<!-- Bloqueo por Contraseña -->
 	{#if moment.metadata?.password && !isUnlocked}
 		<div class="absolute inset-0 z-20 flex flex-col items-center justify-center p-6 text-center backdrop-blur-xl bg-white/85 dark:bg-stone-900/85 text-stone-900 dark:text-white border border-stone-200/60 dark:border-white/10">
@@ -478,7 +843,7 @@
 			</p>
 			<button
 				type="button"
-				onclick={handleUnlockRequest}
+				onclick={ handleUnlockRequest }
 				class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 text-xs font-bold shadow-md hover:brightness-105 active:scale-95 transition-all cursor-pointer"
 			>
 				Desbloquear
@@ -493,59 +858,76 @@
 		onclick={ handleCardContentClick }
 		class="relative z-10 p-2 cursor-pointer"
 	>
+		<!-- Nota de Voz de Audio -->
+		{#if isVoiceNote && mediaUrl}
+			<div class="mb-3">
+				<AudioPlayer
+					src={ mediaUrl }
+					title={ moment.title || 'Nota de Voz' }
+					duration={ moment.metadata?.audioDuration || 0 }
+					volumeOrientation="vertical"
+					{relationColor}
+					isExternalPaused={ shouldShowEphemeralCover || effectiveIsViewed || !isUnlocked || cardState.isObscured }
+					resetTrigger={ cardState.audioResetTrigger }
+					autoplayTrigger={ cardState.audioAutoplayTrigger }
+					onPlayStateChange={ ( isPlaying: boolean ) => ( cardState.isVoicePlaying = isPlaying ) }
+				/>
+			</div>
+		{/if}
+
 		<!-- Imagen / Video Multimedia -->
-		{#if moment.metadata?.imageUrl}
+		{#if isImage && mediaUrl}
 			<div class="aspect-4/5 overflow-hidden rounded-2xl relative shadow-inner mb-3">
-				{#if moment.metadata.is_temporal}
+				{#if moment.metadata?.is_temporal}
 					<SecureEphemeralMedia
-						imageUrl={moment.metadata.imageUrl}
+						imageUrl={ mediaUrl }
 						alt={ moment.title || 'Foto de recuerdo' }
 						isEphemeral={ true }
-						isObscured={ isObscured }
+						isObscured={ cardState.isObscured }
 						watermarkText={`${ memoriesStore.currentUser.name } • Confidencial`}
 					/>
 				{:else}
 					<img
-						src={ moment.metadata.imageUrl }
+						src={ mediaUrl }
 						alt={ moment.title || 'Foto de recuerdo' }
 						class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
 					/>
 				{/if}
 
-				{#if !moment.metadata.is_temporal && passwordSecondsLeft !== undefined && passwordSecondsLeft > 0}
+				{#if !moment.metadata?.is_temporal && cardState.passwordSecondsLeft !== undefined && cardState.passwordSecondsLeft > 0}
 					<div class="absolute top-2.5 right-2.5 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold text-amber-300 bg-black/60 backdrop-blur-md border border-amber-400/30">
 						<Clock size={ 12 } />
-						<span>{ passwordSecondsLeft }s restantes</span>
+						<span>{ cardState.passwordSecondsLeft }s restantes</span>
 					</div>
 				{/if}
 			</div>
-		{:else if moment.metadata?.videoUrl}
+		{:else if isVideo && mediaUrl}
 			<div class="aspect-video overflow-hidden rounded-2xl relative shadow-inner bg-black mb-3">
-				{#if moment.metadata.is_temporal}
+				{#if moment.metadata?.is_temporal}
 					<SecureEphemeralMedia
-						videoUrl={moment.metadata.videoUrl}
+						videoUrl={ mediaUrl }
 						alt={ moment.title || 'Video de recuerdo' }
 						isEphemeral={ true }
-						isObscured={ isObscured }
+						isObscured={ cardState.isObscured }
 						watermarkText={`${ memoriesStore.currentUser.name } • Confidencial`}
 					/>
 				{:else}
 					<!-- svelte-ignore a11y_media_has_caption -->
 					<video
-						src={ moment.metadata.videoUrl }
+						src={ mediaUrl }
 						controls
 						class="w-full h-full object-cover"
-                        autoplay={ true }
-                        muted={ true }
-                        playsinline
-                        loop={ true }
+						autoplay={ true }
+						muted={ true }
+						playsinline
+						loop={ true }
 					></video>
 				{/if}
 			</div>
 		{/if}
 
 		<!-- Texto / Contenido y Título -->
-		<div class="p-3 space-y-2 { moment.metadata?.is_temporal ? 'select-none' : '' } { !hasMedia && isEphemeralRevealed ? 'pb-24' : '' }">
+		<div class="p-3 space-y-2 { moment.metadata?.is_temporal ? 'select-none' : '' } { !hasMedia && cardState.isEphemeralRevealed ? 'pb-24' : '' }">
 			<!-- Tags automáticos con colores semánticos vibrantes -->
 			<div class="flex flex-wrap items-center gap-1.5">
 				{#each moment.tags as tag}
@@ -584,11 +966,10 @@
 
 	<!-- Línea de cuenta regresiva con efecto de mecha/fuego quemándose -->
 	{#if moment.metadata?.is_temporal && !effectiveIsViewed && secondsLeft > 0}
-		<div class="relative z-40 w-full px-1 mt-auto mb-1 { isEphemeralRevealed && isHolding ? 'opacity-100' : 'opacity-75' }">
+		<div class="relative z-40 w-full px-2 mt-auto mb-1 { cardState.isEphemeralRevealed ? 'opacity-100' : 'opacity-75' }">
 			<MomentCountdownProgress
 				{secondsLeft}
 				{progressPercent}
-				showBadge={ false }
 			/>
 		</div>
 	{/if}
@@ -612,15 +993,27 @@
 			{/if}
 		</div>
 
-		<!-- Botones de Acción -->
+		<!-- Botones de Acción (4 botones con colores diferenciados) -->
 		<div class="flex items-center gap-1 shrink-0">
-			<!-- Botón para ver y abrir el momento en pantalla completa por Dialog -->
-			{#if !effectiveIsViewed}
+			<!-- 1. Compartir momento -->
+			<Tooltip text="Compartir momento" side="top" sideOffset={ 6 }>
+				<button
+					type="button"
+					onclick={ handleOpenShare }
+					class="size-7 rounded-xl flex items-center justify-center bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-sky-400 border border-sky-500/25 transition-all active:scale-90 cursor-pointer shadow-2xs"
+					aria-label="Compartir momento"
+				>
+					<Share2 size={ 13 } />
+				</button>
+			</Tooltip>
+
+			<!-- 2. Ver en pantalla completa -->
+			{#if !effectiveIsViewed && !isFutureLocked}
 				<Tooltip text={ !isUnlocked && moment.metadata?.password ? 'Desbloquear y ver en pantalla completa' : 'Ver en pantalla completa' } side="top" sideOffset={ 6 }>
 					<button
 						type="button"
 						onclick={ handleOpenViewer }
-						class="size-7 rounded-xl flex items-center justify-center bg-stone-100/90 dark:bg-white/10 hover:bg-stone-200 dark:hover:bg-white/20 text-stone-700 dark:text-stone-200 hover:text-stone-900 dark:hover:text-white border border-stone-200/70 dark:border-white/10 transition-all active:scale-90 cursor-pointer shadow-2xs"
+						class="size-7 rounded-xl flex items-center justify-center bg-violet-500/10 hover:bg-violet-500/20 text-violet-600 dark:text-violet-400 border border-violet-500/25 transition-all active:scale-90 cursor-pointer shadow-2xs"
 						aria-label="Ver momento en pantalla completa"
 					>
 						<Maximize2 size={ 13 } />
@@ -628,25 +1021,13 @@
 				</Tooltip>
 			{/if}
 
-			{#if canReplay}
-				<Tooltip text="Volver a ver momento efímero" side="top" sideOffset={ 6 }>
-					<button
-						type="button"
-						onclick={handleSuperAdminReplay}
-						class="size-7 rounded-xl flex items-center justify-center bg-amber-500/15 text-amber-500 dark:text-amber-400 hover:bg-amber-500/25 border border-amber-500/30 transition-all active:scale-90 cursor-pointer shadow-2xs"
-						aria-label="Volver a ver momento efímero"
-					>
-						<RotateCcw size={ 13 } />
-					</button>
-				</Tooltip>
-			{/if}
-
+			<!-- 3. Editar momento -->
 			{#if canEdit && onEdit}
 				<Tooltip text="Editar momento" side="top" sideOffset={ 6 }>
 					<button
 						type="button"
-						onclick={() => onEdit && onEdit( moment )}
-						class="size-7 rounded-xl flex items-center justify-center bg-stone-100/90 dark:bg-white/10 hover:bg-amber-500/15 text-stone-700 dark:text-stone-200 hover:text-amber-500 dark:hover:text-amber-400 border border-stone-200/70 dark:border-white/10 transition-all active:scale-90 cursor-pointer shadow-2xs"
+						onclick={ () => onEdit && onEdit( moment ) }
+						class="size-7 rounded-xl flex items-center justify-center bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/25 transition-all active:scale-90 cursor-pointer shadow-2xs"
 						aria-label="Editar momento"
 					>
 						<Edit3 size={ 13 } />
@@ -654,12 +1035,13 @@
 				</Tooltip>
 			{/if}
 
+			<!-- 4. Eliminar momento -->
 			{#if canDelete && onDelete}
 				<Tooltip text="Eliminar momento" side="top" sideOffset={ 6 }>
 					<button
 						type="button"
-						onclick={() => onDelete && onDelete( moment.id )}
-						class="size-7 rounded-xl flex items-center justify-center bg-stone-100/90 dark:bg-white/10 hover:bg-rose-500/15 text-stone-700 dark:text-stone-200 hover:text-rose-500 dark:hover:text-rose-400 border border-stone-200/70 dark:border-white/10 transition-all active:scale-90 cursor-pointer shadow-2xs"
+						onclick={ () => onDelete && onDelete( moment.id ) }
+						class="size-7 rounded-xl flex items-center justify-center bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/25 transition-all active:scale-90 cursor-pointer shadow-2xs"
 						aria-label="Eliminar momento"
 					>
 						<Trash2 size={ 13 } />
@@ -670,14 +1052,55 @@
 	</div>
 </div>
 
+<!-- Modal para Compartir Momento -->
+<ShareMomentModal
+	bind:open={ isShareOpen }
+	{moment}
+	{relationColor}
+	{relationPath}
+	onClose={ () => ( isShareOpen = false ) }
+/>
+
 <!-- Modal para ver el Momento en Pantalla Completa -->
 <MomentDetailModal
-	bind:open={ isViewerOpen }
+	bind:open={ cardState.isViewerOpen }
+	bind:remainingMs={ cardState.remainingMs }
+	bind:musicCurrentTime={ cardState.backgroundMusicSec }
+	bind:musicVolume={ cardState.musicVolume }
+	bind:isMusicPlaying={ cardState.isMusicPlaying }
+	bind:isMusicManuallyPaused={ cardState.isMusicManuallyPaused }
 	{moment}
 	{relationColor}
 	{currentUserId}
 	isViewed={ effectiveIsViewed }
-	{onRecordView}
+	onMusicTimeUpdate={ ( sec: number ) => ( cardState.backgroundMusicSec = sec ) }
+	onMusicToggle={ ( playing: boolean, manual?: boolean ) => handleMusicToggle( playing, manual ?? false ) }
+	onRecordView={ ( id: string ) => {
+		cardState.remainingMs = 0;
+		cardState.isEphemeralRevealed = false;
+		cardState.isLocalReplayActive = false;
+		if ( onRecordView ) {
+			onRecordView( id );
+		}
+	} }
+	onClose={ handleCloseViewer }
 	{onEdit}
 	{onDelete}
 />
+
+<style>
+	@keyframes breathingLock {
+		0%, 100% {
+			transform: scale( 1 );
+			filter: brightness( 1 );
+		}
+		50% {
+			transform: scale( 1.07 );
+			filter: brightness( 1.15 );
+		}
+	}
+
+	.breathing-lock {
+		animation: breathingLock 2.8s ease-in-out infinite;
+	}
+</style>
