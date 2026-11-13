@@ -46,6 +46,7 @@ export interface Relationship {
 	type_id    : string;
 	color      : string;
 	order      : number;
+	date?      : string;
 }
 
 export type RelationshipMemberRole = 'owner' | 'admin' | 'member';
@@ -75,16 +76,21 @@ export interface RelationshipInvitation {
 	status          : InvitationStatus;
 }
 
-export type MomentTag = 'image' | 'video' | 'text' | 'quote';
+export type MomentTag = 'image' | 'video' | 'text' | 'quote' | 'voice note';
 
 export interface MomentMetadata {
-	imageUrl?       : string;
-	videoUrl?       : string;
+	url?            : string;
+	audioDuration?  : number;
+	videoDuration?  : number;
+	quote?          : string;
+	youtubeVideoId? : string;
+	unlock_at?      : string;
 	bgColor?        : string;
 	is_blocked?     : boolean;
 	password?       : string;
 	timer?          : number;
 	is_temporal?    : boolean;
+	[ key: string ] : unknown;
 }
 
 export interface MomentEntity {

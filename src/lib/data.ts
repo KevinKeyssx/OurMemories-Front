@@ -227,7 +227,8 @@ export const INITIAL_RELATIONSHIPS: Relationship[] = [
 		is_active  : true,
 		type_id    : '1',
 		color      : '#f43f5e',
-		order      : 0
+		order      : 0,
+		date       : '2023-02-14T00:00:00.000Z'
 	},
 	{
 		id         : 'rel_2',
@@ -242,7 +243,8 @@ export const INITIAL_RELATIONSHIPS: Relationship[] = [
 		is_active  : true,
 		type_id    : '2',
 		color      : '#c084fc',
-		order      : 1
+		order      : 1,
+		date       : '2020-05-15T00:00:00.000Z'
 	},
 	{
 		id         : 'rel_3',
@@ -257,7 +259,8 @@ export const INITIAL_RELATIONSHIPS: Relationship[] = [
 		is_active  : true,
 		type_id    : '3',
 		color      : '#38bdf8',
-		order      : 2
+		order      : 2,
+		date       : '2022-09-01T00:00:00.000Z'
 	}
 ];
 
