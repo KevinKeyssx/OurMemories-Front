@@ -32,7 +32,8 @@ export const POST: RequestHandler = async ( { request } ) => {
 		is_active  : true,
 		type_id    : body.type_id || '1',
 		color      : body.color || '#f43f5e',
-		order      : typeof body.order === 'number' ? body.order : currentList.length
+		order      : typeof body.order === 'number' ? body.order : currentList.length,
+		date       : body.date || undefined
 	};
 
 	const updatedList = [ ...currentList, newRelationship ];
