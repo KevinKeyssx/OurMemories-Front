@@ -1,47 +1,50 @@
 <script lang="ts">
-	import { onDestroy, onMount } from 'svelte';
+	import { onDestroy } from 'svelte';
+	import { memoriesStore } from '$lib/store.svelte';
 
-    import { EyeOff } from '@lucide/svelte';
-
-    import { memoriesStore } from '$lib/store.svelte';
-
-
-    interface Props {
-		imageUrl?       : string;
-		videoUrl?       : string;
-		alt?            : string;
-		isEphemeral?    : boolean;
-		watermarkText?  : string;
-		isObscured?     : boolean;
-		class?          : string;
+	interface Props {
+		url?           : string;
+		imageUrl?      : string;
+		videoUrl?      : string;
+		alt?           : string;
+		isEphemeral?   : boolean;
+		watermarkText? : string;
+		isObscured?    : boolean;
+		fit?           : 'cover' | 'contain';
+		class?         : string;
 	}
 
-
-    let {
-		imageUrl,
-		videoUrl,
+	let {
+		url,
+		imageUrl: propImageUrl,
+		videoUrl: propVideoUrl,
 		alt = 'Contenido del momento',
 		isEphemeral = false,
 		watermarkText,
-		isObscured: propIsObscured = false,
+		isObscured = false,
+		fit = 'cover',
 		class: customClass = ''
 	}: Props = $props();
 
+	const isVideoType = $derived<boolean>(
+		Boolean( propVideoUrl || ( url && ( url.includes( '.mp4' ) || url.includes( '.mov' ) || url.includes( 'youtube' ) || url.includes( 'youtu.be' ) ) ) )
+	);
+	const imageUrl = $derived<string | undefined>(
+		propImageUrl || ( url && !isVideoType ? url : undefined )
+	);
+	const videoUrl = $derived<string | undefined>(
+		propVideoUrl || ( url && isVideoType ? url : undefined )
+	);
 
-    let canvasElement    = $state<HTMLCanvasElement | null>( null );
-	let internalObscured = $state<boolean>( false );
-	let isMediaLoaded    = $state<boolean>( false );
-	let blobVideoUrl     = $state<string | null>( null );
+	let canvasElement = $state<HTMLCanvasElement | null>( null );
+	let isMediaLoaded = $state<boolean>( false );
+	let blobVideoUrl  = $state<string | null>( null );
 
-	const isObscured     = $derived<boolean>( propIsObscured || internalObscured );
-
-
-    const effectiveWatermark = $derived<string>(
+	const effectiveWatermark = $derived<string>(
 		watermarkText || `${ memoriesStore.currentUser.name } • ${ new Date().toLocaleDateString() } • Confidencial`
 	);
 
-
-    function drawProtectedImage( src: string ): void {
+	function drawProtectedImage( src: string ): void {
 		if ( !canvasElement ) {
 			return;
 		}
@@ -56,7 +59,7 @@
 			const canvas = canvasElement;
 			const ctx = canvas.getContext( '2d' );
 
-            if ( !ctx ) {
+			if ( !ctx ) {
 				return;
 			}
 
@@ -91,75 +94,20 @@
 		}
 	}
 
-
-    async function prepareProtectedVideo( url: string ): Promise<void> {
+	async function prepareProtectedVideo( url: string ): Promise<void> {
 		try {
 			const res = await fetch( url );
 
-            if ( !res.ok ) {
+			if ( !res.ok ) {
 				blobVideoUrl = url;
 				return;
 			}
 
-            const blob = await res.blob();
+			const blob = await res.blob();
 
-            blobVideoUrl = URL.createObjectURL( blob );
+			blobVideoUrl = URL.createObjectURL( blob );
 		} catch {
 			blobVideoUrl = url;
-		}
-	}
-
-
-	function handleWindowBlur(): void {
-		if ( isEphemeral ) {
-			internalObscured = true;
-		}
-	}
-
-	function handleWindowFocus(): void {
-		if ( isEphemeral ) {
-			internalObscured = false;
-		}
-	}
-
-	function handleVisibilityChange(): void {
-		if ( isEphemeral && document.hidden ) {
-			internalObscured = true;
-		} else if ( isEphemeral && !document.hidden ) {
-			internalObscured = false;
-		}
-	}
-
-	function handleKeyCapture( e: KeyboardEvent ): void {
-		if ( !isEphemeral ) {
-			return;
-		}
-
-		// Bloqueo y detección de PrintScreen, DevTools, atajos de recorte y captura
-		const isCaptureOrModifierKey =
-			e.key === 'PrintScreen'
-            || e.code === 'PrintScreen'
-            || e.keyCode === 44
-            || e.key === 'Shift'
-            || e.key === 'Control'
-            || e.key === 'Alt'
-            || e.key === 'Meta'
-            || e.key === 'F12'
-            || e.shiftKey
-            || e.ctrlKey
-            || e.altKey
-            || e.metaKey;
-
-		if ( isCaptureOrModifierKey ) {
-			internalObscured = true;
-
-			try {
-				navigator.clipboard?.writeText( '' );
-			} catch {}
-
-			setTimeout( () => {
-				internalObscured = false;
-			}, 1500 );
 		}
 	}
 
@@ -175,37 +123,16 @@
 		}
 	} );
 
-	onMount( () => {
-		if ( isEphemeral ) {
-			window.addEventListener( 'blur', handleWindowBlur );
-			window.addEventListener( 'focus', handleWindowFocus );
-			document.addEventListener( 'visibilitychange', handleVisibilityChange );
-			window.addEventListener( 'keydown', handleKeyCapture );
-			window.addEventListener( 'keyup', handleKeyCapture );
-		}
-	} );
-
 	onDestroy( () => {
-		if ( typeof window !== 'undefined' ) {
-			window.removeEventListener( 'blur', handleWindowBlur );
-			window.removeEventListener( 'focus', handleWindowFocus );
-			document.removeEventListener( 'visibilitychange', handleVisibilityChange );
-			window.removeEventListener( 'keydown', handleKeyCapture );
-			window.removeEventListener( 'keyup', handleKeyCapture );
-		}
-
-        if ( blobVideoUrl && blobVideoUrl.startsWith( 'blob:' ) ) {
+		if ( blobVideoUrl && blobVideoUrl.startsWith( 'blob:' ) ) {
 			URL.revokeObjectURL( blobVideoUrl );
 		}
 	} );
 </script>
 
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div
 	class="relative w-full h-full overflow-hidden select-none { customClass }"
-	oncontextmenu={( e ) => e.preventDefault()}
-	onclick={() => { if ( internalObscured ) internalObscured = false; }}
+	oncontextmenu={ ( e ) => e.preventDefault() }
 	role="region"
 	aria-label="Contenido confidencial protegido"
 >
@@ -214,9 +141,9 @@
 		{#if imageUrl}
 			<div class="relative w-full h-full overflow-hidden select-none">
 				<canvas
-					bind:this={canvasElement}
-					class="w-full h-full object-cover select-none pointer-events-none transition-all duration-300 { isObscured ? 'blur-2xl brightness-50' : '' }"
-					aria-label={alt}
+					bind:this={ canvasElement }
+					class="w-full h-full select-none pointer-events-none transition-all duration-300 { fit === 'contain' ? 'object-contain max-h-[65vh]' : 'object-cover' } { isObscured ? 'blur-2xl brightness-50' : '' }"
+					aria-label={ alt }
 				></canvas>
 
 				{#if !isMediaLoaded}
@@ -230,29 +157,16 @@
 			<!-- svelte-ignore a11y_media_has_caption -->
 			<video
 				src={ blobVideoUrl || videoUrl }
-				class="w-full h-full object-cover select-none transition-all duration-300 { isObscured ? 'blur-2xl brightness-50' : '' }"
+				class="w-full h-full select-none transition-all duration-300 { fit === 'contain' ? 'object-contain max-h-[65vh]' : 'object-cover' } { isObscured ? 'blur-2xl brightness-50' : '' }"
 				controls
 				controlsList="nodownload nofullscreen noremoteplayback"
 				disablePictureInPicture={ true }
 				playsinline
-				oncontextmenu={( e ) => e.preventDefault()}
-                loop={ true }
-                muted={ false }
-                autoplay={ true }
+				oncontextmenu={ ( e ) => e.preventDefault() }
+				loop={ true }
+				muted={ false }
+				autoplay={ true }
 			></video>
-		{/if}
-
-		<!-- Escudo reactivo al perder el foco (Anti-capturas y Anti-recortes de pantalla) -->
-		{#if isObscured}
-			<div class="absolute inset-0 z-30 flex flex-col items-center justify-center p-4 bg-stone-950/95 backdrop-blur-2xl text-center text-white space-y-2">
-				<div class="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30 animate-pulse">
-					<EyeOff size={ 20 } />
-				</div>
-				<p class="text-xs font-bold text-amber-200">Protección de privacidad activa</p>
-				<p class="text-[10px] text-stone-400 max-w-50">
-					Haz clic en la ventana para reanudar la visualización.
-				</p>
-			</div>
 		{/if}
 
 		<!-- Marca de agua sutil en pantalla -->
@@ -263,20 +177,20 @@
 		<!-- Modo estándar (no efímero) -->
 		{#if imageUrl}
 			<img
-				src={imageUrl}
-				alt={alt}
-				class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+				src={ imageUrl }
+				alt={ alt }
+				class="w-full h-full transition-transform duration-700 { fit === 'contain' ? 'object-contain max-h-[65vh]' : 'object-cover group-hover:scale-105' }"
 			/>
 		{:else if videoUrl}
 			<!-- svelte-ignore a11y_media_has_caption -->
 			<video
-				src={videoUrl}
-				class="w-full h-full object-cover"
+				src={ videoUrl }
+				class="w-full h-full { fit === 'contain' ? 'object-contain max-h-[65vh]' : 'object-cover' }"
 				controls
 				playsinline
-                loop={ true }
-                muted={ false }
-                autoplay={ true }
+				loop={ true }
+				muted={ false }
+				autoplay={ true }
 			></video>
 		{/if}
 	{/if}
