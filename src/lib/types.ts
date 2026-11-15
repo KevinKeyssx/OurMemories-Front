@@ -130,6 +130,22 @@ export interface MomentUserView {
 	viewed_at : string;
 }
 
+export interface MemoryCinemaMode {
+	id                      : string;
+	memory_id               : string;
+	show_passwords          : boolean;
+	give_passwords          : boolean;
+	show_ephemeral_moments  : boolean;
+	show_images             : boolean;
+	show_videos             : boolean;
+	show_voice              : boolean;
+	show_dedications        : boolean;
+	timer                   : number | null;
+	ken_burns_effect       ?: boolean;
+	created_at             ?: string;
+	updated_at             ?: string;
+}
+
 // Compatibilidad hacia atrás durante la migración
 export type MomentType  = MomentTag;
 export type Memory      = MomentEntity;

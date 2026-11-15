@@ -7,7 +7,8 @@ import type {
     RelationshipInvitation,
     MomentEntity,
     MemoryEntity,
-    MomentUserView
+    MomentUserView,
+    MemoryCinemaMode
 } from './types';
 
 
@@ -409,6 +410,8 @@ export const INITIAL_MOMENTS: MomentEntity[] = [
 ];
 
 export const INITIAL_USER_VIEWS: MomentUserView[] = [];
+
+export const INITIAL_CINEMA_CONFIGS: MemoryCinemaMode[] = [];
 
 // Compatibilidad
 export const INITIAL_GROUPS = INITIAL_RELATIONSHIPS;

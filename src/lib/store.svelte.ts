@@ -8,7 +8,8 @@ import type {
 	MomentUserView,
 	MomentTag,
 	User,
-	UserRole
+	UserRole,
+	MemoryCinemaMode
 } from './types';
 import type { Edge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge';
 import { reorderWithEdge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/util/reorder-with-edge';
@@ -17,6 +18,7 @@ import {
 	INITIAL_MEMORIES,
 	INITIAL_MOMENTS,
 	INITIAL_USER_VIEWS,
+	INITIAL_CINEMA_CONFIGS,
 	CURRENT_USER,
 	INITIAL_USERS,
 	INITIAL_RELATIONSHIP_USER_ROLES,
@@ -62,6 +64,7 @@ class MemoriesStore {
 	memories                = $state<MemoryEntity[]>( INITIAL_MEMORIES );
 	moments                 = $state<MomentEntity[]>( INITIAL_MOMENTS );
 	momentViews             = $state<MomentUserView[]>( INITIAL_USER_VIEWS );
+	cinemaConfigs           = $state<MemoryCinemaMode[]>( INITIAL_CINEMA_CONFIGS );
 	unlockedMomentIds       = $state<string[]>( [] );
 	unlockedMemoryIds       = $state<string[]>( [] );
 	memoryTimerRemaining    = $state<Record<string, number>>( {} );
@@ -188,6 +191,15 @@ class MemoriesStore {
 				}
 			}
 
+			const savedCinemaConfigs = localStorage.getItem( 'ourmemories_cinema_configs' );
+			if ( savedCinemaConfigs ) {
+				try {
+					this.cinemaConfigs = JSON.parse( savedCinemaConfigs );
+				} catch ( e ) {
+					console.error( 'Error parsing saved cinema configs', e );
+				}
+			}
+
 			if ( savedTheme ) {
 				this.theme = savedTheme;
 			} else {
@@ -210,6 +222,7 @@ class MemoriesStore {
 			localStorage.setItem( 'ourmemories_memories_v2', JSON.stringify( this.memories ) );
 			localStorage.setItem( 'ourmemories_moments', JSON.stringify( this.moments ) );
 			localStorage.setItem( 'ourmemories_views', JSON.stringify( this.momentViews ) );
+			localStorage.setItem( 'ourmemories_cinema_configs', JSON.stringify( this.cinemaConfigs ) );
 			localStorage.setItem( 'ourmemories_theme', this.theme );
 			localStorage.setItem( 'ourmemories_auth', String( this.isAuthenticated ) );
 		}
@@ -663,6 +676,7 @@ class MemoriesStore {
 		}
 
 		this.moments = this.moments.filter( ( moment: MomentEntity ) => moment.memory_id !== id );
+		this.cinemaConfigs = this.cinemaConfigs.filter( ( c: MemoryCinemaMode ) => c.memory_id !== id );
 		this.persist();
 	}
 
@@ -700,6 +714,68 @@ class MemoriesStore {
 			return true;
 		}
 		return Boolean( moment.created_by && moment.created_by === this.currentUser.id );
+	}
+
+	canManageCinema( memory?: MemoryEntity ): boolean {
+		if ( this.currentUser.role === 'super_admin' || this.currentUser.role === 'admin' ) {
+			return true;
+		}
+		return Boolean( memory?.created_by && memory.created_by === this.currentUser.id );
+	}
+
+	getCinemaConfig( memoryId: string ): MemoryCinemaMode {
+		const found = this.cinemaConfigs.find( ( c: MemoryCinemaMode ) => c.memory_id === memoryId );
+		if ( found ) {
+			return { ...found };
+		}
+
+		return {
+			id                     : `cinema_${ memoryId }`,
+			memory_id              : memoryId,
+			show_passwords         : true,
+			give_passwords         : false,
+			show_ephemeral_moments : false,
+			show_images            : true,
+			show_videos            : true,
+			show_voice             : true,
+			show_dedications       : true,
+			timer                  : 8,
+			ken_burns_effect       : true,
+			created_at             : new Date().toISOString(),
+			updated_at             : new Date().toISOString()
+		};
+	}
+
+	saveCinemaConfig( config: Partial<MemoryCinemaMode> & { memory_id: string } ): void {
+		const existingIndex = this.cinemaConfigs.findIndex( ( c: MemoryCinemaMode ) => c.memory_id === config.memory_id );
+		const now = new Date().toISOString();
+
+		if ( existingIndex >= 0 ) {
+			this.cinemaConfigs[ existingIndex ] = {
+				...this.cinemaConfigs[ existingIndex ],
+				...config,
+				updated_at : now
+			};
+		} else {
+			const newConfig: MemoryCinemaMode = {
+				id                     : config.id || `cinema_${ config.memory_id }`,
+				memory_id              : config.memory_id,
+				show_passwords         : config.show_passwords !== undefined ? config.show_passwords : true,
+				give_passwords         : config.give_passwords !== undefined ? config.give_passwords : false,
+				show_ephemeral_moments : config.show_ephemeral_moments !== undefined ? config.show_ephemeral_moments : false,
+				show_images            : config.show_images !== undefined ? config.show_images : true,
+				show_videos            : config.show_videos !== undefined ? config.show_videos : true,
+				show_voice             : config.show_voice !== undefined ? config.show_voice : true,
+				show_dedications       : config.show_dedications !== undefined ? config.show_dedications : true,
+				timer                  : config.timer !== undefined ? config.timer : 8,
+				ken_burns_effect       : config.ken_burns_effect !== undefined ? config.ken_burns_effect : true,
+				created_at             : now,
+				updated_at             : now
+			};
+			this.cinemaConfigs.push( newConfig );
+		}
+
+		this.persist();
 	}
 
 	setUserRole( role: UserRole ): void {
