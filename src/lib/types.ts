@@ -150,3 +150,44 @@ export interface MemoryCinemaMode {
 export type MomentType  = MomentTag;
 export type Memory      = MomentEntity;
 export type Group       = Relationship;
+
+export type BillingCycle = 'monthly' | 'yearly';
+
+export interface PlanFeatureItem {
+	text       : string;
+	highlight? : boolean;
+	included   : boolean;
+}
+
+export interface PlanPricingTier {
+	id             : string;
+	name           : string;
+	tagline        : string;
+	monthlyPrice   : number;
+	yearlyPrice    : number;
+	isLifetime?    : boolean;
+	lifetimePrice? : number;
+	isPopular?     : boolean;
+	badge?         : string;
+	maxRelations   : string;
+	maxMembers     : string;
+	maxMemories    : string;
+	maxMoments     : string;
+	audioDuration  : string;
+	features       : PlanFeatureItem[];
+	ctaText        : string;
+	colorTheme     : 'gray' | 'purple' | 'violet' | 'gold';
+}
+
+export interface LegacyGiftPack {
+	id          : string;
+	name        : string;
+	subtitle    : string;
+	price       : number;
+	badge       : string;
+	passesCount : number;
+	planName    : string;
+	duration    : string;
+	description : string;
+	icon        : string;
+}
