@@ -62,25 +62,11 @@
 	}
 
 
-    function getMomentsCount( memoryId: string ): number {
+	function getMomentsCount( memoryId: string ): number {
 		return moments.filter( ( m: MomentEntity ) => m.memory_id === memoryId ).length;
 	}
 
-
-    function updateScrollState(): void {
-		if ( !carouselEl ) {
-			return;
-		}
-		const { scrollLeft, scrollWidth, clientWidth } = carouselEl;
-		const maxScroll = scrollWidth - clientWidth;
-		hasOverflow   = scrollWidth > clientWidth + 10;
-		canScrollPrev = scrollLeft > 15;
-		canScrollNext = scrollLeft < maxScroll - 15;
-		isNearEnd     = scrollLeft >= maxScroll - 40;
-	}
-
-
-    function scrollCarousel( direction: 'prev' | 'next' ): void {
+	function scrollCarousel( direction: 'prev' | 'next' ): void {
 		if ( !carouselEl ) {
 			return;
 		}
@@ -104,14 +90,6 @@
 			}
 		}
 	}
-
-	$effect( () => {
-		if ( activeView === 'carousel' && carouselEl ) {
-			requestAnimationFrame( () => {
-				updateScrollState();
-			} );
-		}
-	} );
 </script>
 
 <div class="space-y-4">
@@ -243,7 +221,6 @@
 			<!-- Carril Deslizable del Carrusel con Padding Lateral Suave -->
 			<div
 				bind:this={ carouselEl }
-				onscroll={ updateScrollState }
 				class="flex items-center gap-4 overflow-x-auto pb-4 pt-1 no-scrollbar scroll-smooth px-8 sm:px-10"
 			>
 				<!-- Tarjeta de Acción Rápida para Crear Memoria (w-60 shrink-0) -->
