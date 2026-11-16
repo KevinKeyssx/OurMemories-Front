@@ -1,7 +1,9 @@
 <script lang="ts">
-	import { Dialog } from 'bits-ui';
-	import { X } from '@lucide/svelte';
 	import type { Snippet } from 'svelte';
+
+    import { Dialog }   from 'bits-ui';
+	import { X }        from '@lucide/svelte';
+
 
 	interface Props {
 		open           ?: boolean;
@@ -17,7 +19,8 @@
 		footer         ?: Snippet;
 	}
 
-	let {
+
+    let {
 		open = $bindable( false ),
 		title,
 		description,
@@ -31,9 +34,11 @@
 		footer
 	}: Props = $props();
 
-	function handleOpenChange( isOpen: boolean ): void {
+
+    function handleOpenChange( isOpen: boolean ): void {
 		open = isOpen;
-		if ( !isOpen && onClose ) {
+
+        if ( !isOpen && onClose ) {
 			onClose();
 		}
 	}
@@ -42,10 +47,10 @@
 <Dialog.Root bind:open={ open } onOpenChange={ handleOpenChange }>
 	<Dialog.Portal>
 		<Dialog.Overlay
-			class="fixed inset-0 z-50 bg-stone-950/75 backdrop-blur-md animate-in fade-in-0 duration-200"
+			class="fixed inset-0 z-50 bg-stone-950/60 dark:bg-stone-950/80 backdrop-blur-md animate-in fade-in-0 duration-200"
 		/>
 		<Dialog.Content
-			class="fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] { maxWidth } rounded-3xl { contentClass ? contentClass : 'p-6 sm:p-7 space-y-5' } shadow-2xl max-h-[92vh] overflow-y-auto no-scrollbar outline-hidden animate-in fade-in-0 zoom-in-95 duration-200 { contentStyle ? 'backdrop-blur-2xl' : 'bg-white dark:bg-dark-card border border-stone-200/70 dark:border-white/10' }"
+			class="fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] { maxWidth } rounded-3xl { contentClass ? contentClass : 'p-6 sm:p-7 space-y-5' } shadow-2xl max-h-[92vh] overflow-y-auto no-scrollbar outline-hidden animate-in fade-in-0 zoom-in-95 duration-200 bg-white dark:bg-dark-card { contentStyle ? '' : 'border border-stone-200/70 dark:border-white/10' }"
 			style={ contentStyle }
 		>
 			<!-- Cabecera del Diálogo -->
@@ -57,7 +62,8 @@
 								{ title }
 							</Dialog.Title>
 						{/if}
-						{#if description}
+
+                        {#if description}
 							<Dialog.Description class="text-xs text-stone-400">
 								{ description }
 							</Dialog.Description>
@@ -68,7 +74,8 @@
 						{#if headerExtra}
 							{@render headerExtra()}
 						{/if}
-						{#if showCloseButton}
+
+                        {#if showCloseButton}
 							<Dialog.Close
 								class="p-2 rounded-xl text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
 								aria-label="Cerrar ventana"
@@ -103,4 +110,3 @@
 		</Dialog.Content>
 	</Dialog.Portal>
 </Dialog.Root>
-
