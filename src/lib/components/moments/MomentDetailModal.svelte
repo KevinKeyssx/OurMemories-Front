@@ -84,8 +84,8 @@
 	const dialogStyle     = $derived<string>(
 		hasCustomBg
 			? isDark
-				? `border: 1px solid ${ hexColor }55; background: radial-gradient(circle at 50% 0%, ${ hexColor }33 0%, #160B29 75%); box-shadow: 0 25px 60px -15px ${ hexColor }40, 0 0 45px -10px ${ hexColor }30;`
-				: `border: 1px solid ${ hexColor }45; background: radial-gradient(circle at 50% 0%, ${ hexColor }20 0%, #ffffff 80%); box-shadow: 0 25px 60px -15px ${ hexColor }30, 0 0 35px -10px ${ hexColor }20;`
+				? `border: 1px solid color-mix(in srgb, ${ hexColor } 40%, rgba(255, 255, 255, 0.12)); background: radial-gradient(circle at 50% -10%, color-mix(in srgb, ${ hexColor } 25%, #160B29) 0%, #160B29 75%); box-shadow: 0 25px 60px -15px ${ hexColor }40, 0 0 45px -10px ${ hexColor }30;`
+				: `border: 1px solid color-mix(in srgb, ${ hexColor } 25%, #e2e8f0); background: radial-gradient(circle at 50% -10%, color-mix(in srgb, ${ hexColor } 14%, #ffffff) 0%, #ffffff 70%); box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.10), 0 0 30px -5px color-mix(in srgb, ${ hexColor } 20%, transparent);`
 			: ''
 	);
 	const mediaUrl        = $derived<string>(
@@ -450,8 +450,8 @@
 
 		<!-- Cabecera de Autor, Fecha, Tags y Botón Cerrar (X) -->
 		<div
-			class="flex flex-wrap items-center justify-between gap-3 pb-3 mb-4 border-b transition-colors { hasCustomBg ? '' : 'border-stone-100 dark:border-white/5' }"
-			style={ hasCustomBg ? `border-color: ${ hexColor }33;` : '' }
+			class="flex flex-wrap items-center justify-between gap-3 pb-3 mb-4 border-b transition-colors animate-in fade-in-0 slide-in-from-top-2 duration-300 ease-out { hasCustomBg ? '' : 'border-stone-100 dark:border-white/5' }"
+			style={ hasCustomBg ? ( isDark ? `border-color: ${ hexColor }33;` : `border-color: color-mix(in srgb, ${ hexColor } 20%, #e5e7eb);` ) : '' }
 		>
 			<div class="flex items-center gap-3">
 				<div
@@ -466,7 +466,7 @@
 							{ moment.author }
 						</span>
 						{#if moment.capture_date}
-							<span class="inline-flex items-center gap-1 text-xs text-stone-400">
+							<span class="inline-flex items-center gap-1 text-xs text-stone-500 dark:text-stone-400 font-medium">
 								<Calendar size={ 12 } />
 								<span>{ formatCaptureDate( moment.capture_date ) }</span>
 							</span>
@@ -514,7 +514,7 @@
 					<button
 						type="button"
 						onclick={ handleModalClose }
-						class="size-8 rounded-xl flex items-center justify-center text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-white/5 border border-stone-200/50 dark:border-white/10 transition-all active:scale-90 cursor-pointer shrink-0 shadow-2xs ml-1"
+						class="size-8 rounded-xl flex items-center justify-center text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200 bg-stone-100/80 hover:bg-stone-200/80 dark:bg-white/5 dark:hover:bg-white/10 border border-stone-200/60 dark:border-white/10 transition-all active:scale-90 cursor-pointer shrink-0 shadow-2xs ml-1"
 						aria-label="Cerrar modal (Esc)"
 					>
 						<X size={ 16 } />
@@ -525,7 +525,7 @@
 
 		<!-- Nota de Voz de Audio -->
 		{#if isVoiceNote && mediaUrl}
-			<div class="mb-5">
+			<div class="mb-5 animate-in fade-in-0 slide-in-from-bottom-3 duration-400 ease-out">
 				<AudioPlayer
 					src={ mediaUrl }
 					title={ moment.title || 'Nota de Voz' }
@@ -542,7 +542,7 @@
 		{#if isImage && mediaUrl}
 			<!-- svelte-ignore a11y_no_static_element_interactions -->
 			<div
-				class="w-full max-h-[65vh] flex items-center justify-center rounded-2xl overflow-hidden bg-stone-950/80 dark:bg-black/80 relative shadow-2xl mb-5 select-none"
+				class="w-full max-h-[65vh] flex items-center justify-center rounded-2xl overflow-hidden bg-stone-950/80 dark:bg-black/80 relative shadow-2xl mb-5 select-none animate-in fade-in-0 zoom-in-98 duration-500 ease-out"
 				style={ hasCustomBg ? `border: 1px solid ${ hexColor }30;` : '' }
 				oncontextmenu={ ( e ) => { if ( moment.metadata?.is_temporal ) e.preventDefault(); } }
 			>
@@ -566,7 +566,7 @@
 		{:else if isVideo && mediaUrl}
 			<!-- svelte-ignore a11y_no_static_element_interactions -->
 			<div
-				class="w-full max-h-[65vh] flex items-center justify-center rounded-2xl overflow-hidden bg-black relative shadow-2xl mb-5 select-none"
+				class="w-full max-h-[65vh] flex items-center justify-center rounded-2xl overflow-hidden bg-black relative shadow-2xl mb-5 select-none animate-in fade-in-0 zoom-in-98 duration-500 ease-out"
 				style={ hasCustomBg ? `border: 1px solid ${ hexColor }30;` : '' }
 				oncontextmenu={ ( e ) => { if ( moment.metadata?.is_temporal ) e.preventDefault(); } }
 			>
@@ -597,17 +597,23 @@
 		<div class="space-y-3 px-1 { moment.metadata?.is_temporal ? 'select-none' : '' }">
 			{#if moment.title}
 				<h3
-					class="text-xl sm:text-2xl font-black tracking-tight"
-					style="color: { relationColor };"
+					class="text-xl sm:text-2xl font-black tracking-tight animate-text-reveal"
+					style="color: { relationColor }; animation-delay: 150ms;"
 				>
 					{ moment.title }
 				</h3>
 			{/if}
 
 			{#if moment.content}
-				<div class="rounded-2xl { moment.tags.includes( 'quote' ) ? 'p-5 bg-amber-500/5 dark:bg-amber-400/5 border border-amber-500/20' : '' }">
-					<p class="text-stone-700 dark:text-stone-200 leading-relaxed { moment.tags.includes( 'quote' ) ? 'italic font-serif text-base sm:text-lg border-l-4 border-amber-500 pl-3.5' : 'text-sm sm:text-base font-normal' }">
-						{ moment.content }
+				<div class="rounded-2xl { moment.tags.includes( 'quote' ) ? 'p-5 bg-amber-500/8 dark:bg-amber-400/5 border border-amber-500/25 shadow-xs' : '' }">
+					<p class="text-stone-800 dark:text-stone-200 leading-relaxed { moment.tags.includes( 'quote' ) ? 'italic font-serif text-base sm:text-lg border-l-4 border-amber-500 pl-4' : 'text-sm sm:text-base font-normal' }">
+						{#if moment.tags.includes( 'quote' )}
+							{#each ( moment.content || '' ).split( ' ' ) as word, i}
+								<span class="animate-word" style="animation-delay: { Math.min( 1600, i * 75 ) }ms;">{ word }&nbsp;</span>
+							{/each}
+						{:else}
+							<span class="animate-text-reveal inline-block" style="animation-delay: 250ms;">{ moment.content }</span>
+						{/if}
 					</p>
 				</div>
 			{/if}
@@ -615,10 +621,10 @@
 
 		<!-- Pie del Diálogo con Acciones -->
 		<div
-			class="flex items-center justify-between pt-5 mt-6 border-t transition-colors { hasCustomBg ? '' : 'border-stone-100 dark:border-white/5' }"
-			style={ hasCustomBg ? `border-color: ${ hexColor }33;` : '' }
+			class="flex items-center justify-between pt-5 mt-6 border-t transition-colors animate-in fade-in-0 duration-300 delay-150 { hasCustomBg ? '' : 'border-stone-100 dark:border-white/5' }"
+			style={ hasCustomBg ? ( isDark ? `border-color: ${ hexColor }33;` : `border-color: color-mix(in srgb, ${ hexColor } 20%, #e5e7eb);` ) : '' }
 		>
-			<span class="text-xs text-stone-400 font-medium">
+			<span class="text-xs text-stone-500 dark:text-stone-400 font-medium">
 				Identificador: { moment.id }
 			</span>
 
@@ -631,7 +637,7 @@
 								open = false;
 								onEdit && onEdit( moment );
 							} }
-							class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-stone-100 dark:bg-white/5 hover:bg-amber-500/15 text-stone-700 dark:text-stone-200 hover:text-amber-500 border border-stone-200/70 dark:border-white/10 transition-all cursor-pointer shadow-xs active:scale-95"
+							class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-stone-100 dark:bg-white/5 hover:bg-amber-500/15 text-stone-700 dark:text-stone-200 hover:text-amber-600 dark:hover:text-amber-500 border border-stone-200/70 dark:border-white/10 transition-all cursor-pointer shadow-xs active:scale-95"
 						>
 							<Edit3 size={ 14 } />
 							<span>Editar</span>
@@ -647,7 +653,7 @@
 								open = false;
 								onDelete && onDelete( moment.id );
 							} }
-							class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-stone-100 dark:bg-white/5 hover:bg-rose-500/15 text-stone-700 dark:text-stone-200 hover:text-rose-500 border border-stone-200/70 dark:border-white/10 transition-all cursor-pointer shadow-xs active:scale-95"
+							class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-stone-100 dark:bg-white/5 hover:bg-rose-500/15 text-stone-700 dark:text-stone-200 hover:text-rose-600 dark:hover:text-rose-500 border border-stone-200/70 dark:border-white/10 transition-all cursor-pointer shadow-xs active:scale-95"
 						>
 							<Trash2 size={ 14 } />
 							<span>Eliminar</span>
