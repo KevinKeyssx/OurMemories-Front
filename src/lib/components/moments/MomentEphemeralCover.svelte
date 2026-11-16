@@ -61,25 +61,29 @@
 		class="absolute -top-12 -right-12 w-44 h-44 rounded-full pointer-events-none opacity-20 dark:opacity-35 blur-3xl transition-transform duration-700"
 		style="background-color: { bgColor };"
 	></div>
-	<div
+
+    <div
 		class="absolute -bottom-12 -left-12 w-40 h-40 rounded-full pointer-events-none opacity-15 dark:opacity-30 blur-3xl transition-transform duration-700"
 		style="background-color: { bgColor };"
 	></div>
 
 	{#if isViewed}
 		<div
-			class="relative z-10 w-12 h-12 rounded-xl flex items-center justify-center mb-2.5 shadow-md transition-transform hover:scale-105 duration-300"
+			class="relative z-10 w-12 h-12 rounded-xl flex items-center justify-center mb-2.5 shadow-md transition-transform hover:scale-105 duration-300 animate-in fade-in-0 zoom-in-90"
 			style="background-color: { bgColor }18; color: { bgColor }; border: 1px solid { bgColor }40; box-shadow: 0 0 20px -4px { bgColor }30;"
 		>
 			<Lock size={ 22 } />
 		</div>
-		<h4 class="relative z-10 text-sm font-extrabold text-stone-900 dark:text-white tracking-tight">
+
+        <h4 class="relative z-10 text-sm font-extrabold text-stone-900 dark:text-white tracking-tight animate-text-reveal" style="animation-delay: 150ms;">
 			Momento efímero ya visto
 		</h4>
-		<p class="relative z-10 text-[11px] text-stone-500 dark:text-stone-300 max-w-xs mt-1 leading-relaxed">
+
+        <p class="relative z-10 text-[11px] text-stone-500 dark:text-stone-300 max-w-xs mt-1 leading-relaxed animate-text-reveal" style="animation-delay: 350ms;">
 			Este momento solo podía visualizarse una única vez y ya ha sido consumido.
 		</p>
-		{#if canReplay && onReplay}
+
+        {#if canReplay && onReplay}
 			<button
 				type="button"
 				onpointerdown={ ( e: PointerEvent ) => {
@@ -92,25 +96,29 @@
 					e.stopPropagation();
 					onReplay();
 				} }
-				class="relative z-10 mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-md hover:brightness-105 select-none"
+				class="relative z-10 mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-md hover:brightness-105 select-none animate-in fade-in-0 zoom-in-95 duration-300 delay-150"
 				style="background: linear-gradient(135deg, { bgColor }25 0%, { bgColor }15 100%); color: { bgColor }; border: 1px solid { bgColor }50; box-shadow: 0 4px 15px -3px { bgColor }30;"
 			>
 				<RotateCcw size={ 13 } />
-				<span>Volver a ver (Super Admin)</span>
+
+                <span>Volver a ver (Super Admin)</span>
 			</button>
 		{/if}
 	{:else}
-		<div class="relative z-10 w-12 h-12 rounded-xl bg-amber-500/15 dark:bg-amber-500/20 text-amber-500 dark:text-amber-400 flex items-center justify-center mb-2 shadow-md border border-amber-500/25">
+		<div class="relative z-10 w-12 h-12 rounded-xl bg-amber-500/15 dark:bg-amber-500/20 text-amber-500 dark:text-amber-400 flex items-center justify-center mb-2 shadow-md border border-amber-500/25 animate-in fade-in-0 zoom-in-90 duration-300">
 			<Flame size={ 22 } />
 		</div>
-		<div class="relative z-10 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300 text-[10px] font-extrabold uppercase tracking-widest mb-1.5 border border-amber-500/25">
+
+        <div class="relative z-10 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300 text-[10px] font-extrabold uppercase tracking-widest mb-1.5 border border-amber-500/25 animate-in fade-in-0 zoom-in-95 duration-300 delay-50">
 			<ShieldAlert size={ 11 } />
 			<span>Ver una sola vez</span>
 		</div>
-		<h4 class="relative z-10 text-sm font-extrabold text-stone-900 dark:text-white">
+
+        <h4 class="relative z-10 text-sm font-extrabold text-stone-900 dark:text-white animate-text-reveal" style="animation-delay: 150ms;">
 			{ isPaused ? 'Momento Pausado' : 'Momento Confidencial' }
 		</h4>
-		<p class="relative z-10 text-[11px] text-stone-600 dark:text-stone-300 max-w-xs mt-1 mb-3 leading-relaxed">
+
+        <p class="relative z-10 text-[11px] text-stone-600 dark:text-stone-300 max-w-xs mt-1 mb-3 leading-relaxed animate-text-reveal" style="animation-delay: 350ms;">
 			{#if isPaused}
 				Pasa el cursor o haz clic para continuar viendo. Te quedan { secondsLeft } segundos restantes.
 			{:else}
@@ -126,7 +134,7 @@
 				e.stopPropagation();
 				handleAction();
 			} }
-			class="relative z-10 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-linear-to-r from-amber-500 to-rose-500 text-white text-xs font-bold shadow-lg shadow-amber-500/25 hover:scale-105 active:scale-95 transition-all cursor-pointer select-none"
+			class="relative z-10 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-linear-to-r from-amber-500 to-rose-500 text-white text-xs font-bold shadow-lg shadow-amber-500/25 hover:scale-105 active:scale-95 transition-all cursor-pointer select-none animate-in fade-in-0 zoom-in-95 duration-300 delay-150"
 		>
 			{#if isPaused}
 				<Play size={ 14 } class="fill-current" />
