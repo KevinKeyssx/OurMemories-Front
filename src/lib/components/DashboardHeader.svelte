@@ -57,17 +57,29 @@
 					<Menu size={20} />
 				</button>
 
-				<div class="transition-all duration-500 select-none">
-					<div class="flex items-center gap-3 transition-all duration-500 origin-left {isScrolled ? 'opacity-0 h-0 overflow-hidden mb-0 scale-75' : 'opacity-100 h-6 mb-2'}">
-						<span class="text-[10px] uppercase tracking-[0.4em] text-brand-secondary dark:text-brand-secondary font-black whitespace-nowrap">Nuestras memorias digitales</span>
-						<div class="h-px w-12 bg-brand-secondary/30"></div>
+				<div class="flex items-center gap-3 sm:gap-4 select-none">
+					<!-- Logo OurMemories adaptable según el estado del scroll -->
+					<a
+						href="/"
+						class="shrink-0 transition-transform duration-500 hover:scale-105 active:scale-95 block"
+						aria-label="Ir al inicio"
+					>
+						<img
+							src="/logo.avif"
+							alt="OurMemories"
+							class="object-contain transition-all duration-500 drop-shadow-md { isScrolled ? 'size-8 sm:size-11' : 'size-20 sm:size-20' }"
+						/>
+					</a>
+
+					<div class="transition-all duration-500">
+						<div class="flex items-center gap-3 transition-all duration-500 origin-left { isScrolled ? 'opacity-0 h-0 overflow-hidden mb-0 scale-75' : 'opacity-100 h-6 mb-2' }">
+							<span class="text-[10px] uppercase tracking-[0.4em] text-brand-secondary dark:text-brand-secondary font-black whitespace-nowrap">Nuestras memorias digitales</span>
+							<div class="h-px w-12 bg-brand-secondary/30"></div>
+						</div>
+						<h1 class="font-black tracking-tight text-brand-ink dark:text-dark-ink transition-all duration-500 origin-left { isScrolled ? 'text-2xl sm:text-3xl' : 'text-4xl sm:text-6xl' }">
+							Our<span class="italic bg-linear-to-r from-purple-600 to-amber-500 dark:from-purple-500 dark:to-amber-500 bg-clip-text text-transparent inline-block pr-3 sm:pr-4">Memories</span>
+						</h1>
 					</div>
-					<h1 class="font-black tracking-tighter text-brand-ink dark:text-dark-ink transition-all duration-500 origin-left {isScrolled ? 'text-2xl sm:text-3xl' : 'text-4xl sm:text-6xl'}">
-						Our<span class="italic transition-colors duration-500" style="color: {currentRelationship?.color || '#f43f5e'};">Memories</span>
-					</h1>
-					<!-- <p class="text-[10px] font-black uppercase tracking-[0.3em] transition-all duration-500 {isScrolled ? 'opacity-0 scale-90 h-0 overflow-hidden' : 'opacity-50 mt-1'}">
-						Relación: {currentRelationship?.name || 'Cargando...'}
-					</p> -->
 				</div>
 			</div>
 
