@@ -1,79 +1,50 @@
 <script lang="ts">
-	import { Sun, Moon, Sparkles, ArrowRight, Lock, Heart } from '@lucide/svelte';
-	import { memoriesStore } from '$lib/store.svelte';
+	import { memoriesStore }    from '$lib/store.svelte';
+	import LandingHeader        from '$lib/components/landing/LandingHeader.svelte';
+	import HeroSection          from '$lib/components/landing/HeroSection.svelte';
+	import FunctionsSection     from '$lib/components/landing/FunctionsSection.svelte';
+	import PurposeSection       from '$lib/components/landing/PurposeSection.svelte';
+	import OrganizationSection  from '$lib/components/landing/OrganizationSection.svelte';
+	import InnovationSection    from '$lib/components/landing/InnovationSection.svelte';
+	import PlansSection         from '$lib/components/landing/PlansSection.svelte';
+	import CtaSection           from '$lib/components/landing/CtaSection.svelte';
 
-	const firstRelationPath: string = memoriesStore.groups[0]?.path_name || 'pareja';
+
+	const firstRelationPath: string = memoriesStore.groups[ 0 ]?.path_name || 'pareja';
 </script>
 
 <svelte:head>
-	<title>Our Memories - Atesora tus momentos</title>
+	<title>OurMemories - Donde los recuerdos se guardan, no se publican</title>
 </svelte:head>
 
-<div class="min-h-screen flex flex-col justify-between p-6 md:p-12">
-	<header class="flex items-center justify-between max-w-6xl w-full mx-auto">
-		<div class="flex items-center gap-3">
-			<div class="w-10 h-10 rounded-2xl bg-linear-to-tr from-brand-accent to-pink-500 flex items-center justify-center text-white shadow-lg shadow-brand-accent/30">
-				<Sparkles size={20} />
-			</div>
-			<span class="text-xl font-bold font-display tracking-tight">OurMemories</span>
-		</div>
+<div class="min-h-screen bg-brand-paper dark:bg-dark-paper text-brand-ink dark:text-dark-ink selection:bg-purple-500/25 selection:text-purple-400 transition-colors duration-500 relative overflow-hidden font-sans">
+	<!-- Luces Ambientales Moradas, Violetas y Doradas -->
+	<div class="fixed top-0 left-1/2 -translate-x-1/2 w-275 h-150 bg-linear-to-b from-purple-600/25 via-fuchsia-500/15 to-transparent blur-3xl pointer-events-none -z-10"></div>
+	<div class="fixed top-1/3 -left-48 w-112.5 h-112.5 bg-purple-700/20 dark:bg-purple-600/30 rounded-full blur-3xl pointer-events-none -z-10"></div>
+	<div class="fixed bottom-1/4 -right-48 w-125 h-125 bg-violet-600/20 dark:bg-violet-500/25 rounded-full blur-3xl pointer-events-none -z-10"></div>
+	<div class="fixed top-2/3 left-1/3 w-100 h-100 bg-amber-500/15 dark:bg-amber-500/15 rounded-full blur-3xl pointer-events-none -z-10"></div>
 
-		<div class="flex items-center gap-4">
-			<button
-				onclick={() => memoriesStore.toggleTheme()}
-				class="p-2.5 rounded-2xl border border-stone-200/60 dark:border-white/10 hover:bg-stone-100 dark:hover:bg-white/5 transition-colors text-stone-600 dark:text-stone-300"
-				aria-label="Cambiar tema"
-			>
-				{#if memoriesStore.theme === 'light'}
-					<Moon size={18} />
-				{:else}
-					<Sun size={18} />
-				{/if}
-			</button>
+	<!-- 1. Header de Navegación Flotante -->
+	<LandingHeader {firstRelationPath} />
 
-			<a
-				href="/login"
-				class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border border-stone-200/70 dark:border-white/10 hover:border-brand-accent text-stone-700 dark:text-stone-200 hover:text-brand-accent transition-all"
-			>
-				<Lock size={15} />
-				<span>Acceso</span>
-			</a>
-		</div>
-	</header>
+	<!-- 2. Hero Section: Pantalla Completa Exacta (100dvh) -->
+	<HeroSection {firstRelationPath} />
 
-	<main class="max-w-4xl w-full mx-auto text-center py-16 space-y-8">
-		<div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-accent/10 border border-brand-accent/20 text-brand-accent dark:text-dark-accent text-xs font-semibold">
-			<Heart size={14} class="fill-current" />
-			<span>Tu espacio íntimo y organizado</span>
-		</div>
+	<!-- 3. Funciones: Bento Grid Enriquecido (Fotos, Videos, Dedicatorias, Audio, Cápsulas) -->
+	<FunctionsSection />
 
-		<h1 class="text-4xl md:text-6xl font-extrabold tracking-tight leading-tight">
-			Cada relación tiene su propia historia y sus recuerdos
-		</h1>
+	<!-- 4. Propósito: ¿Qué es OurMemories? vs Redes vs Nube -->
+	<PurposeSection />
 
-		<p class="text-lg md:text-xl text-stone-600 dark:text-stone-400 max-w-2xl mx-auto font-normal">
-			Organiza tus momentos especiales por relaciones y galerías: fotos, frases inolvidables, videos, memes y anécdotas, todo protegido.
-		</p>
+	<!-- 5. Organización: Pestañas de Relaciones y 3 Pasos Clave -->
+	<OrganizationSection />
 
-		<div class="flex flex-wrap items-center justify-center gap-4 pt-4">
-			<a
-				href={`/dashboard/${firstRelationPath}`}
-				class="inline-flex items-center gap-2 px-8 py-4 rounded-2xl bg-linear-to-r from-brand-accent to-purple-600 text-white font-semibold shadow-xl shadow-brand-accent/25 hover:shadow-brand-accent/40 hover:scale-105 active:scale-95 transition-all text-base"
-			>
-				<span>Ir al Dashboard</span>
-				<ArrowRight size={18} />
-			</a>
+	<!-- 6. Innovación: Modo Cine, Cápsulas, Banda Sonora, Privacidad -->
+	<InnovationSection />
 
-			<a
-				href="/login"
-				class="inline-flex items-center gap-2 px-8 py-4 rounded-2xl bg-white dark:bg-white/5 border border-stone-200/80 dark:border-white/10 text-stone-800 dark:text-stone-200 font-semibold hover:border-brand-accent transition-all text-base"
-			>
-				<span>Iniciar Sesión</span>
-			</a>
-		</div>
-	</main>
+	<!-- 7. Planes y Precios: Suscripciones y Legacy Packs -->
+	<PlansSection {firstRelationPath} />
 
-	<footer class="text-center text-xs text-stone-400 py-4">
-		&copy; 2026 OurMemories. Construido con SvelteKit.
-	</footer>
+	<!-- 8. Llamado a la Acción Final (CTA) y Pie de Página -->
+	<CtaSection {firstRelationPath} />
 </div>
