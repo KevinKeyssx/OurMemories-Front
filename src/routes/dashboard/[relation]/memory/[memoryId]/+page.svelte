@@ -11,7 +11,9 @@
 		Sparkles,
 		FolderHeart,
 		Edit3,
-		Trash2
+		Trash2,
+		Film,
+		SlidersHorizontal
 	} from '@lucide/svelte';
 
 	import type {
@@ -25,6 +27,8 @@
 	import SecurityUnlockModal from '$lib/components/shared/SecurityUnlockModal.svelte';
 	import ConfirmDialog       from '$lib/components/shared/ConfirmDialog.svelte';
 	import EditMemoryModal     from '$lib/components/memories/EditMemoryModal.svelte';
+	import CinemaModeModal     from '$lib/components/memories/CinemaModeModal.svelte';
+	import CinemaConfigModal   from '$lib/components/memories/CinemaConfigModal.svelte';
 	import Tooltip             from '$lib/components/shared/Tooltip.svelte';
 
 	const relationParam = $derived<string>( page.params.relation || 'pareja' );
@@ -53,6 +57,8 @@
 	let isUnlockMomentOpen        = $state<boolean>( false );
 	let isEditMemoryOpen          = $state<boolean>( false );
 	let isConfirmDeleteMemoryOpen = $state<boolean>( false );
+	let isCinemaOpen              = $state<boolean>( false );
+	let isCinemaConfigOpen        = $state<boolean>( false );
 
 	const isMemoryUnlocked = $derived<boolean>(
 		!memory?.password || ( memory ? memoriesStore.isMemoryUnlocked( memory.id ) : true )
@@ -203,25 +209,61 @@
 				</div>
 			</div>
 
-			<!-- Información de la Memoria -->
-			<div class="relative z-10 space-y-2 text-white max-w-2xl pt-8">
-				<div class="flex items-center gap-2 text-[11px] font-semibold text-white/90 drop-shadow-xs">
-					<Calendar size={ 13 } />
-					<span>Creado el { new Date( memory.created_at ).toLocaleDateString( 'es-ES', { month: 'long', day: 'numeric', year: 'numeric' } ) }</span>
+			<!-- Información de la Memoria y Botones Modo Cine (Esquina Inferior Derecha) -->
+			<div class="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6 pt-8">
+				<div class="space-y-2 text-white max-w-2xl">
+					<div class="flex items-center gap-2 text-[11px] font-semibold text-white/90 drop-shadow-xs">
+						<Calendar size={ 13 } />
+						<span>Creado el { new Date( memory.created_at ).toLocaleDateString( 'es-ES', { month: 'long', day: 'numeric', year: 'numeric' } ) }</span>
+					</div>
+
+					<h1
+						class="text-3xl sm:text-5xl font-black tracking-tight leading-tight drop-shadow-md"
+						style="color: { currentRelationship?.color || '#f43f5e' };"
+					>
+						{ memory.title }
+					</h1>
+
+					{#if memory.description}
+						<p class="text-sm text-white/90 leading-relaxed font-normal drop-shadow-sm">
+							{ memory.description }
+						</p>
+					{/if}
 				</div>
 
-				<h1
-					class="text-3xl sm:text-5xl font-black tracking-tight leading-tight drop-shadow-md"
-					style="color: { currentRelationship?.color || '#f43f5e' };"
-				>
-					{ memory.title }
-				</h1>
+				<!-- Botones de Modo Cine (Esquina Inferior Derecha) -->
+				<div class="flex items-center gap-2 shrink-0">
+					<Tooltip text="Reproducir los momentos de esta memoria en pantalla inmersiva">
+						<button
+							type="button"
+							onclick={ () => ( isCinemaOpen = true ) }
+							class="inline-flex items-center gap-2.5 px-5 py-3 rounded-2xl bg-black/40 hover:bg-black/60 text-white text-xs font-black backdrop-blur-xl border border-white/20 hover:border-white/40 shadow-2xl hover:scale-105 active:scale-95 transition-all cursor-pointer group"
+							style="box-shadow: 0 10px 30px -5px { currentRelationship?.color || '#f43f5e' }35;"
+							aria-label="Abrir Modo Cine"
+						>
+							<div
+								class="size-6 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110"
+								style="background: linear-gradient(135deg, { currentRelationship?.color || '#f43f5e' }, #7c3aed);"
+							>
+								<Film size={ 13 } class="text-white fill-white/20" />
+							</div>
+							<span class="tracking-wide">Modo Cine</span>
+						</button>
+					</Tooltip>
 
-				{#if memory.description}
-					<p class="text-sm text-white/90 leading-relaxed font-normal drop-shadow-sm">
-						{ memory.description }
-					</p>
-				{/if}
+					{#if canManage}
+						<Tooltip text="Configurar Modo Cine (Tiempos, formatos y seguridad)">
+							<button
+								type="button"
+								onclick={ () => ( isCinemaConfigOpen = true ) }
+								class="size-11 rounded-2xl bg-black/40 hover:bg-black/60 text-white/90 hover:text-white flex items-center justify-center backdrop-blur-xl border border-white/20 hover:border-white/40 shadow-2xl hover:scale-105 active:scale-95 transition-all cursor-pointer"
+								aria-label="Configurar Modo Cine"
+							>
+								<SlidersHorizontal size={ 16 } />
+							</button>
+						</Tooltip>
+					{/if}
+				</div>
 			</div>
 		</div>
 
@@ -313,5 +355,22 @@
 		initialTab="moment"
 		initialMemoryId={ memory.id }
 		onClose={ () => ( isUploadOpen = false ) }
+	/>
+
+	<!-- Modal de Modo Cine y Configuración -->
+	<CinemaModeModal
+		isOpen={ isCinemaOpen }
+		{memory}
+		moments={ memoryMoments }
+		relationColor={ currentRelationship?.color }
+		onClose={ () => ( isCinemaOpen = false ) }
+		onOpenConfig={ () => ( isCinemaConfigOpen = true ) }
+	/>
+
+	<CinemaConfigModal
+		isOpen={ isCinemaConfigOpen }
+		memoryId={ memory.id }
+		color={ currentRelationship?.color }
+		onClose={ () => ( isCinemaConfigOpen = false ) }
 	/>
 {/if}
