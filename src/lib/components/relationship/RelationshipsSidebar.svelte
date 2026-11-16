@@ -3,7 +3,6 @@
 	import { fade, fly } from 'svelte/transition';
 	import {
 		Heart,
-		Home,
 		Settings2,
 		X
 	} from '@lucide/svelte';
@@ -122,14 +121,19 @@
 
 <!-- Barra Lateral Fija para Escritorio (Desktop Sidebar) -->
 <aside class="hidden lg:flex fixed left-0 top-0 bottom-0 w-20 flex-col items-center py-10 border-r border-stone-200/50 dark:border-white/5 bg-white/80 dark:bg-dark-card/80 backdrop-blur-md z-40 transition-colors duration-200 overflow-hidden select-none">
-	<!-- Botón Superior Home / Dashboard Principal -->
+	<!-- Botón Superior Home / Dashboard Principal con Logo -->
 	<a
 		href="/dashboard"
-		class="w-14 h-14 rounded-2xl mb-12 flex items-center justify-center text-white shadow-lg bg-linear-to-tr from-brand-accent to-pink-500 shadow-brand-accent/30 hover:shadow-brand-accent/50 hover:scale-105 active:scale-95 transition-all duration-300 shrink-0 { isHomeActive ? 'ring-3 ring-brand-accent shadow-brand-accent/50 scale-105' : 'opacity-85 hover:opacity-100' }"
+		class="w-14 h-14 rounded-2xl mb-12 flex items-center justify-center text-white shadow-lg hover:scale-105 active:scale-95 transition-all duration-300 shrink-0 group { isHomeActive ? 'ring-3 ring-amber-400 shadow-amber-500/50 scale-105' : 'opacity-90 hover:opacity-100' }"
+		style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 35%, #e11d48 75%, #7c3aed 100%); box-shadow: 0 10px 25px -4px rgba(245, 158, 11, 0.45), 0 4px 12px -2px rgba(225, 29, 72, 0.25);"
 		title="Ir al Dashboard Principal"
 		aria-label="Ir al Dashboard Principal"
 	>
-		<Home size={ 26 } />
+		<img
+			src="/logo.avif"
+			alt="OurMemories"
+			class="size-9 object-contain drop-shadow-md select-none transition-transform duration-300 group-hover:scale-105"
+		/>
 	</a>
 
 	{#if isLoading}
@@ -194,11 +198,16 @@
 						<a
 							href="/dashboard"
 							onclick={ onCloseMobile }
-							class="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-md bg-linear-to-tr from-brand-accent to-pink-500 shadow-brand-accent/25 hover:scale-105 active:scale-95 transition-all shrink-0 { isHomeActive ? 'ring-2 ring-brand-accent' : '' }"
+							class="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-md hover:scale-105 active:scale-95 transition-all shrink-0 { isHomeActive ? 'ring-2 ring-amber-400' : '' }"
+							style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 35%, #e11d48 75%, #7c3aed 100%); box-shadow: 0 6px 16px -3px rgba(245, 158, 11, 0.4);"
 							title="Ir al Dashboard Principal"
 							aria-label="Ir al Dashboard Principal"
 						>
-							<Home size={ 20 } />
+							<img
+								src="/logo.avif"
+								alt="OurMemories"
+								class="size-6 object-contain drop-shadow-sm select-none"
+							/>
 						</a>
 						<div>
 							<h3 class="text-sm font-bold tracking-tight">Dashboard</h3>
