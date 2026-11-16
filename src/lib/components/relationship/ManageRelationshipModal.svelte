@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import {
+
+    import {
 		Heart,
 		ShieldCheck,
 		UserPlus,
@@ -22,20 +23,20 @@
 	import type {
 		Relationship,
 		RelationshipType,
-		User,
 		RelationshipInvitation
-	} from '$lib/types';
-	import { memoriesStore } from '$lib/store.svelte';
-	import { INITIAL_RELATIONSHIP_TYPES } from '$lib/data';
-	import Dialog from '$lib/components/shared/Dialog.svelte';
-	import Tabs, { type TabItem } from '$lib/components/shared/Tabs.svelte';
-	import Input from '$lib/components/shared/inputs/Input.svelte';
-	import Select, { type SelectItem } from '$lib/components/shared/inputs/Select.svelte';
-	import IconPicker from '$lib/components/shared/inputs/IconPicker.svelte';
-	import MediaUploader from '$lib/components/shared/inputs/MediaUploader.svelte';
-	import ColorPicker from '$lib/components/shared/inputs/ColorPicker.svelte';
-	import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte';
-	import QRCode from '$lib/components/shared/QRCode.svelte';
+	}                                       from '$lib/types';
+	import { memoriesStore }                from '$lib/store.svelte';
+	import { INITIAL_RELATIONSHIP_TYPES }   from '$lib/data';
+	import Dialog                           from '$lib/components/shared/Dialog.svelte';
+	import Tabs, { type TabItem }           from '$lib/components/shared/Tabs.svelte';
+	import Input                            from '$lib/components/shared/inputs/Input.svelte';
+	import Select, { type SelectItem }      from '$lib/components/shared/inputs/Select.svelte';
+	import IconPicker                       from '$lib/components/shared/inputs/IconPicker.svelte';
+	import MediaUploader                    from '$lib/components/shared/inputs/MediaUploader.svelte';
+	import ColorPicker                      from '$lib/components/shared/inputs/ColorPicker.svelte';
+	import ConfirmDialog                    from '$lib/components/shared/ConfirmDialog.svelte';
+	import QRCode                           from '$lib/components/shared/QRCode.svelte';
+
 
 	interface Props {
 		isOpen         : boolean;
@@ -78,64 +79,68 @@
 	let isConfirmDeleteOpen       = $state<boolean>( false );
 	let memberToRemove            = $state<{ id: string; name: string } | null>( null );
 	let isConfirmRemoveMemberOpen = $state<boolean>( false );
+    let lastInitializedKey = $state<string>( '' );
 
 	// Temporizador reactivo para actualización de cuenta regresiva
 	let currentTime = $state<number>( Date.now() );
-	$effect( () => {
+
+
+    $effect( () => {
 		const interval = setInterval( () => {
 			currentTime = Date.now();
 		}, 1000 );
 		return () => clearInterval( interval );
-	} );
+	});
+
 
 	function ensureActiveQrInvitation( relId: string, role: 'admin' | 'member' ): void {
 		// Buscar si ya existe una invitación QR activa no expirada
 		const existing = memoriesStore.relationshipInvitations.find(
 			( inv: RelationshipInvitation ) =>
-				inv.relationship_id === relId &&
-				inv.type === 'qr_link' &&
-				inv.status === 'pending' &&
-				inv.role === role &&
-				new Date( inv.expires_at ).getTime() > Date.now()
+				inv.relationship_id === relId
+                && inv.type         === 'qr_link'
+                && inv.status       === 'pending'
+                && inv.role         === role
+                && new Date( inv.expires_at ).getTime() > Date.now()
 		);
 
-		if ( existing ) {
-			activeQrInv = existing;
-		} else {
-			activeQrInv = memoriesStore.createRelationshipInvitation( relId, {
-				type : 'qr_link',
-				role : role
-			} );
-		}
+		activeQrInv = existing || memoriesStore.createRelationshipInvitation( relId, ({
+			type : 'qr_link',
+			role : role
+		}) );
 	}
 
-	function handleRegenerateQr(): void {
+
+    function handleRegenerateQr(): void {
 		if ( !relationship ) {
 			return;
 		}
-		activeQrInv = memoriesStore.createRelationshipInvitation( relationship.id, {
+
+		activeQrInv = memoriesStore.createRelationshipInvitation( relationship.id, ({
 			type : 'qr_link',
 			role : qrRole
-		} );
+		}));
 	}
 
-	let lastInitializedKey = $state<string>( '' );
 
 	$effect( () => {
 		if ( isOpen && relationship ) {
 			const currentKey = `${ relationship.id }-${ initialTab }`;
-			if ( currentKey !== lastInitializedKey ) {
+
+            if ( currentKey !== lastInitializedKey ) {
 				lastInitializedKey = currentKey;
-				untrack( () => {
-					activeTab = initialTab;
-					name = relationship.name || '';
-					typeId = relationship.type_id || '1';
-					avatar = relationship.avatar || 'Heart';
-					color = relationship.color || '#f43f5e';
+
+                untrack( () => {
+					activeTab   = initialTab;
+					name        = relationship.name || '';
+					typeId      = relationship.type_id || '1';
+					avatar      = relationship.avatar || 'Heart';
+					color       = relationship.color || '#f43f5e';
 
 					const isImg = avatar.startsWith( 'http://' ) || avatar.startsWith( 'https://' ) || avatar.startsWith( 'data:image' );
-					avatarMode = isImg ? 'image' : 'icon';
-					inviteSuccess = '';
+
+                    avatarMode      = isImg ? 'image' : 'icon';
+					inviteSuccess   = '';
 				} );
 			}
 		} else if ( !isOpen ) {
@@ -143,22 +148,26 @@
 		}
 	} );
 
-	$effect( () => {
-		if ( isOpen && activeTab === 'invitar' && inviteChannel === 'qr' && relationship ) {
-			const currentRole = qrRole;
-			const relId = relationship.id;
-			untrack( () => {
-				ensureActiveQrInvitation( relId, currentRole );
-			} );
-		}
-	} );
 
-	const avatarTabs: TabItem[] = [
+    $effect( () => {
+		if ( isOpen && activeTab === 'invitar' && inviteChannel === 'qr' && relationship ) {
+			const currentRole   = qrRole;
+			const relId         = relationship.id;
+
+            untrack( () => {
+				ensureActiveQrInvitation( relId, currentRole );
+			});
+		}
+	});
+
+
+    const avatarTabs: TabItem[] = [
 		{ id: 'icon',  label: 'Ícono' },
 		{ id: 'image', label: 'Imagen' }
 	];
 
-	const inviteChannelTabs: TabItem[] = [
+
+    const inviteChannelTabs: TabItem[] = [
 		{
 			id          : 'qr',
 			label       : 'Código QR / WhatsApp',
@@ -173,7 +182,8 @@
 		}
 	];
 
-	const inviteRoleItems: SelectItem[] = [
+
+    const inviteRoleItems: SelectItem[] = [
 		{
 			value       : 'member',
 			label       : 'Miembro',
@@ -186,34 +196,40 @@
 		}
 	];
 
-	const relationshipTypeItems = $derived<SelectItem[]>(
+
+    const relationshipTypeItems = $derived<SelectItem[]>(
 		INITIAL_RELATIONSHIP_TYPES.map( ( type: RelationshipType ) => ({
 			value       : type.id,
 			label       : type.name,
 			description : type.description
-		}) )
+		}))
 	);
 
-	const members = $derived(
+
+    const members = $derived(
 		relationship ? memoriesStore.getMembersForRelationship( relationship.id ) : []
 	);
 
-	const canManage = $derived<boolean>(
+
+    const canManage = $derived<boolean>(
 		relationship ? memoriesStore.canManageRelationship( relationship.id ) : false
 	);
 
-	const isOwnerOrSuperAdmin = $derived<boolean>(
+
+    const isOwnerOrSuperAdmin = $derived<boolean>(
 		memoriesStore.currentUser.role === 'super_admin' ||
-		Boolean( relationship && relationship.created_by === memoriesStore.currentUser.id )
+        Boolean( relationship && relationship.created_by === memoriesStore.currentUser.id )
 	);
 
-	const invitations = $derived<RelationshipInvitation[]>(
+
+    const invitations = $derived<RelationshipInvitation[]>(
 		relationship
 			? memoriesStore.relationshipInvitations.filter( ( inv: RelationshipInvitation ) => inv.relationship_id === relationship.id )
 			: []
 	);
 
-	const modalTabs = $derived<TabItem[]>( [
+
+    const modalTabs = $derived<TabItem[]>( [
 		{
 			id    : 'relacion',
 			label : 'Relación',
@@ -235,27 +251,33 @@
 			icon  : History,
 			badge : invitations.length > 0 ? String( invitations.length ) : undefined
 		}
-	] );
+	]);
 
-	const currentQrLink = $derived<string>(
+
+    const currentQrLink = $derived<string>(
 		typeof window !== 'undefined' && activeQrInv
 			? `${ window.location.origin }/invite?token=${ activeQrInv.token }`
 			: ''
 	);
 
-	function handleAvatarModeChange( mode: string ): void {
+
+    function handleAvatarModeChange( mode: string ): void {
 		avatarMode = mode;
-		const isImg = avatar.startsWith( 'http://' ) || avatar.startsWith( 'https://' ) || avatar.startsWith( 'data:image' );
-		if ( mode === 'icon' && isImg ) {
+
+        const isImg = avatar.startsWith( 'http://' ) || avatar.startsWith( 'https://' ) || avatar.startsWith( 'data:image' );
+
+        if ( mode === 'icon' && isImg ) {
 			avatar = 'Heart';
 		} else if ( mode === 'image' && !isImg ) {
 			avatar = '';
 		}
 	}
 
-	function handleSaveRelationship( e: SubmitEvent ): void {
+
+    function handleSaveRelationship( e: SubmitEvent ): void {
 		e.preventDefault();
-		if ( !relationship || !name.trim() ) {
+
+        if ( !relationship || !name.trim() ) {
 			return;
 		}
 
@@ -271,7 +293,8 @@
 
 		if ( onUpdate ) {
 			const refreshed = memoriesStore.groups.find( ( r: Relationship ) => r.id === relationship?.id );
-			if ( refreshed ) {
+
+            if ( refreshed ) {
 				onUpdate( refreshed );
 			}
 		}
@@ -279,89 +302,110 @@
 		onClose();
 	}
 
-	function handleConfirmDeleteRelationship(): void {
+
+    function handleConfirmDeleteRelationship(): void {
 		if ( !relationship ) {
 			return;
 		}
 
 		const relId = relationship.id;
-		memoriesStore.deleteRelationship( relId );
+
+        memoriesStore.deleteRelationship( relId );
 
 		if ( onDelete ) {
 			onDelete( relId );
 		}
 
 		isConfirmDeleteOpen = false;
-		onClose();
+
+        onClose();
 	}
 
-	function handleRoleChange( userId: string, newRole: 'admin' | 'member' ): void {
+
+    function handleRoleChange( userId: string, newRole: 'admin' | 'member' ): void {
 		if ( !relationship ) {
 			return;
 		}
-		memoriesStore.updateMemberRole( relationship.id, userId, newRole );
+
+        memoriesStore.updateMemberRole( relationship.id, userId, newRole );
 	}
 
-	function promptRemoveMember( member: { id: string; name: string } ): void {
-		memberToRemove = member;
-		isConfirmRemoveMemberOpen = true;
+
+    function promptRemoveMember( member: { id: string; name: string } ): void {
+		memberToRemove              = member;
+		isConfirmRemoveMemberOpen   = true;
 	}
 
-	function handleConfirmRemoveMember(): void {
+
+    function handleConfirmRemoveMember(): void {
 		if ( relationship && memberToRemove ) {
 			memoriesStore.removeMemberFromRelationship( relationship.id, memberToRemove.id );
 		}
-		isConfirmRemoveMemberOpen = false;
-		memberToRemove = null;
+
+        isConfirmRemoveMemberOpen   = false;
+		memberToRemove              = null;
 	}
 
-	function handleSendEmailInvitation( e: SubmitEvent ): void {
+
+    function handleSendEmailInvitation( e: SubmitEvent ): void {
 		e.preventDefault();
-		if ( !relationship || !emailInput.trim() ) {
+
+        if ( !relationship || !emailInput.trim() ) {
 			return;
 		}
 
 		const cleanEmail = emailInput.trim();
-		memoriesStore.createRelationshipInvitation( relationship.id, {
+
+        memoriesStore.createRelationshipInvitation( relationship.id, {
 			type  : 'email',
 			email : cleanEmail,
 			role  : emailRole === 'admin' ? 'admin' : 'member'
-		} );
+		});
 
-		inviteSuccess = `Invitación enviada con éxito a ${ cleanEmail }. Válida durante 24 horas.`;
-		emailInput = '';
+		inviteSuccess   = `Invitación enviada con éxito a ${ cleanEmail }. Válida durante 24 horas.`;
+		emailInput      = '';
 
 		setTimeout( () => {
 			inviteSuccess = '';
 		}, 5000 );
 	}
 
-	function handleCopyInvitationLink( inv: RelationshipInvitation ): void {
+
+    function handleCopyInvitationLink( inv: RelationshipInvitation ): void {
 		const link = `${ window.location.origin }/invite?token=${ inv.token }`;
-		navigator.clipboard.writeText( link );
-		copiedToken = inv.token;
-		setTimeout( () => {
+
+        navigator.clipboard.writeText( link );
+
+        copiedToken = inv.token;
+
+        setTimeout( () => {
 			copiedToken = '';
 		}, 2500 );
 	}
 
-	function handleSimulateAccept( inv: RelationshipInvitation ): void {
+
+    function handleSimulateAccept( inv: RelationshipInvitation ): void {
 		const result = memoriesStore.acceptRelationshipInvitation( inv.token );
-		inviteSuccess = result.message;
-		setTimeout( () => {
+
+        inviteSuccess = result.message;
+
+        setTimeout( () => {
 			inviteSuccess = '';
 		}, 4000 );
 	}
 
-	function formatRemainingTime( expiresAt: string, type: 'qr_link' | 'email' ): { text: string; isExpired: boolean } {
+
+    function formatRemainingTime( expiresAt: string, type: 'qr_link' | 'email' ): { text: string; isExpired: boolean } {
 		const diffMs = new Date( expiresAt ).getTime() - currentTime;
-		if ( diffMs <= 0 ) {
+
+        if ( diffMs <= 0 ) {
 			return { text: 'Expirada', isExpired: true };
 		}
-		const totalSec = Math.floor( diffMs / 1000 );
-		const hours = Math.floor( totalSec / 3600 );
-		const minutes = Math.floor( ( totalSec % 3600 ) / 60 );
-		const seconds = totalSec % 60;
+
+        const totalSec  = Math.floor( diffMs / 1000 );
+		const hours     = Math.floor( totalSec / 3600 );
+		const minutes   = Math.floor( ( totalSec % 3600 ) / 60 );
+		const seconds   = totalSec % 60;
 
 		if ( type === 'email' && hours > 0 ) {
 			return {
@@ -450,9 +494,9 @@
 
 				{#if isOwnerOrSuperAdmin}
 					<button
-						type="button"
-						onclick={ () => ( isConfirmDeleteOpen = true ) }
-						class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-rose-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition-colors cursor-pointer"
+						type    = "button"
+						onclick = { () => ( isConfirmDeleteOpen = true ) }
+						class   = "inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-rose-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition-colors cursor-pointer"
 					>
 						<Trash2 size={ 14 } />
 						<span>Eliminar Relación</span>
@@ -463,21 +507,22 @@
 			<!-- Botones de Acción -->
 			<div class="flex items-center justify-end gap-3 pt-3 border-t border-stone-100 dark:border-white/5">
 				<button
-					type="button"
-					onclick={ onClose }
-					class="px-5 py-2.5 rounded-2xl text-xs font-bold text-stone-500 hover:bg-stone-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
+					type    = "button"
+					onclick = { onClose }
+					class   = "px-5 py-2.5 rounded-2xl text-xs font-bold text-stone-500 hover:bg-stone-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
 				>
 					Cancelar
 				</button>
 
 				<button
-					type="submit"
-					disabled={ !name.trim() }
-					class="inline-flex items-center gap-2 px-6 py-2.5 rounded-2xl text-white text-xs font-bold active:scale-95 disabled:opacity-50 disabled:pointer-events-none transition-all cursor-pointer shadow-lg"
-					style="background-color: { color }; box-shadow: 0 4px 14px -2px { color }66;"
+					type        = "submit"
+					disabled    = { !name.trim() }
+					class       = "inline-flex items-center gap-2 px-6 py-2.5 rounded-2xl text-white text-xs font-bold active:scale-95 disabled:opacity-50 disabled:pointer-events-none transition-all cursor-pointer shadow-lg"
+					style       = "background-color: { color }; box-shadow: 0 4px 14px -2px { color }66;"
 				>
 					<Save size={ 15 } />
-					<span>Guardar Relación</span>
+
+                    <span>Guardar Relación</span>
 				</button>
 			</div>
 		</form>
@@ -489,11 +534,13 @@
 					<h4 class="text-sm font-bold text-stone-900 dark:text-white">
 						Miembros de este espacio
 					</h4>
-					<p class="text-[11px] text-stone-400">
+
+                    <p class="text-[11px] text-stone-400">
 						Los administradores y dueños pueden invitar miembros y cambiar permisos.
 					</p>
 				</div>
-				<span class="text-xs font-bold px-2.5 py-1 rounded-full bg-stone-100 dark:bg-white/5 text-stone-500">
+
+                <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-stone-100 dark:bg-white/5 text-stone-500">
 					{ members.length } miembros
 				</span>
 			</div>
@@ -515,13 +562,15 @@
 									<p class="text-xs font-bold text-stone-900 dark:text-white truncate">
 										{ member.user.name } { member.user.last_name }
 									</p>
-									{#if member.user.id === memoriesStore.currentUser.id}
+
+                                    {#if member.user.id === memoriesStore.currentUser.id}
 										<span class="text-[10px] font-semibold text-stone-400 bg-stone-200/60 dark:bg-white/10 px-1.5 py-0.2 rounded-md">
 											Tú
 										</span>
 									{/if}
 								</div>
-								<p class="text-[11px] text-stone-400 truncate">
+
+                                <p class="text-[11px] text-stone-400 truncate">
 									{ member.user.email }
 								</p>
 							</div>
@@ -532,7 +581,8 @@
 							{#if member.role === 'owner'}
 								<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-black text-amber-500 bg-amber-500/10 border border-amber-500/20">
 									<Crown size={ 12 } />
-									<span>Dueño</span>
+
+                                    <span>Dueño</span>
 								</span>
 							{:else}
 								{#if canManage && member.user.id !== relationship?.created_by}
@@ -545,7 +595,8 @@
 										>
 											Admin
 										</button>
-										<button
+
+                                        <button
 											type="button"
 											onclick={ () => handleRoleChange( member.user.id, 'member' ) }
 											class="px-2.5 py-1 rounded-lg transition-all cursor-pointer { member.role === 'member' ? 'bg-white dark:bg-white/15 text-stone-900 dark:text-white shadow-xs' : 'text-stone-400 hover:text-stone-600 dark:hover:text-stone-200' }"
@@ -555,18 +606,19 @@
 									</div>
 
 									<button
-										type="button"
-										onclick={ () => promptRemoveMember({ id: member.user.id, name: member.user.name }) }
-										class="p-1.5 rounded-xl text-stone-400 hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
-										title="Remover de la relación"
-										aria-label="Remover de la relación"
+										type        = "button"
+										onclick     = { () => promptRemoveMember({ id: member.user.id, name: member.user.name }) }
+										class       = "p-1.5 rounded-xl text-stone-400 hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
+										title       = "Remover de la relación"
+										aria-label  = "Remover de la relación"
 									>
 										<UserMinus size={ 16 } />
 									</button>
 								{:else}
 									<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold text-stone-500 bg-stone-100 dark:bg-white/5">
 										<UserCheck size={ 12 } />
-										<span>{ member.role === 'admin' ? 'Admin' : 'Miembro' }</span>
+
+                                        <span>{ member.role === 'admin' ? 'Admin' : 'Miembro' }</span>
 									</span>
 								{/if}
 							{/if}
@@ -598,7 +650,8 @@
 								<h4 class="text-xs font-black uppercase tracking-wider text-stone-500 dark:text-stone-400">
 									Invitación Directa con QR
 								</h4>
-								<p class="text-[11px] text-stone-400">
+
+                                <p class="text-[11px] text-stone-400">
 									Válido por 5 minutos para escanear o enviar por WhatsApp
 								</p>
 							</div>
@@ -615,7 +668,8 @@
 								>
 									Miembro
 								</button>
-								<button
+
+                                <button
 									type="button"
 									onclick={ () => {
 										qrRole = 'admin';
@@ -631,7 +685,8 @@
 						<!-- Renderizado del QR Estilizado con qr-code-styling -->
 						{#if currentQrLink && activeQrInv}
 							{@const timer = formatRemainingTime( activeQrInv.expires_at, 'qr_link' )}
-							<QRCode
+
+                            <QRCode
 								value={ currentQrLink }
 								{color}
 								size={ 190 }
@@ -672,7 +727,8 @@
 							<h4 class="text-xs font-black uppercase tracking-wider text-stone-500 dark:text-stone-400">
 								Enviar Invitación por Correo
 							</h4>
-							<span class="text-[10px] font-bold text-blue-500 bg-blue-500/10 px-2 py-0.5 rounded-full flex items-center gap-1 border border-blue-500/20">
+
+                            <span class="text-[10px] font-bold text-blue-500 bg-blue-500/10 px-2 py-0.5 rounded-full flex items-center gap-1 border border-blue-500/20">
 								<Clock size={ 11 } />
 								Válido por 24 horas
 							</span>
@@ -735,11 +791,13 @@
 					<h4 class="text-sm font-bold text-stone-900 dark:text-white">
 						Historial de Invitaciones
 					</h4>
-					<p class="text-[11px] text-stone-400">
+
+                    <p class="text-[11px] text-stone-400">
 						Registro de enlaces QR y correos electrónicos generados para este espacio.
 					</p>
 				</div>
-				<span class="text-xs font-bold px-2.5 py-1 rounded-full bg-stone-100 dark:bg-white/5 text-stone-500">
+
+                <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-stone-100 dark:bg-white/5 text-stone-500">
 					{ invitations.length } registradas
 				</span>
 			</div>
@@ -839,27 +897,27 @@
 
 <!-- Diálogo de Confirmación para Eliminar Relación -->
 <ConfirmDialog
-	isOpen={ isConfirmDeleteOpen }
-	title={`¿Eliminar "${ relationship?.name }"?`}
-	description="Esta acción eliminará de forma irreversible este espacio de relación, junto con todas sus memorias, momentos y configuraciones asociadas."
-	confirmText="Sí, eliminar relación"
-	cancelText="Cancelar"
-	variant="danger"
-	onConfirm={ handleConfirmDeleteRelationship }
-	onClose={ () => ( isConfirmDeleteOpen = false ) }
+	isOpen      = { isConfirmDeleteOpen }
+	title       = {`¿Eliminar "${ relationship?.name }"?`}
+	description = "Esta acción eliminará de forma irreversible este espacio de relación, junto con todas sus memorias, momentos y configuraciones asociadas."
+	confirmText = "Sí, eliminar relación"
+	cancelText  = "Cancelar"
+	variant     = "danger"
+	onConfirm   = { handleConfirmDeleteRelationship }
+	onClose     = { () => ( isConfirmDeleteOpen = false ) }
 />
 
 <!-- Diálogo de Confirmación para Remover Miembro -->
 <ConfirmDialog
-	isOpen={ isConfirmRemoveMemberOpen }
-	title={`¿Remover a ${ memberToRemove?.name }?`}
-	description="El usuario perderá el acceso a los momentos y memorias compartidos en esta relación."
-	confirmText="Remover Miembro"
-	cancelText="Cancelar"
-	variant="warning"
-	onConfirm={ handleConfirmRemoveMember }
-	onClose={ () => {
+	isOpen      = { isConfirmRemoveMemberOpen }
+	title       = {`¿Remover a ${ memberToRemove?.name }?`}
+	description = "El usuario perderá el acceso a los momentos y memorias compartidos en esta relación."
+	confirmText = "Remover Miembro"
+	cancelText  = "Cancelar"
+	variant     = "warning"
+	onConfirm   = { handleConfirmRemoveMember }
+	onClose     = { () => {
 		isConfirmRemoveMemberOpen = false;
 		memberToRemove = null;
-	} }
+	}}
 />
