@@ -3,17 +3,13 @@
 	import { goto } from '$app/navigation';
 
 	import {
-		ArrowLeft,
 		Images,
 		Clock,
 		Plus,
 		Calendar,
-		Sparkles,
 		FolderHeart,
 		Edit3,
 		Trash2,
-		Film,
-		SlidersHorizontal
 	} from '@lucide/svelte';
 
 	import type {
@@ -30,6 +26,9 @@
 	import CinemaModeModal     from '$lib/components/memories/CinemaModeModal.svelte';
 	import CinemaConfigModal   from '$lib/components/memories/CinemaConfigModal.svelte';
 	import Tooltip             from '$lib/components/shared/Tooltip.svelte';
+	import HoverButton         from '$lib/components/shared/buttons/HoverButton.svelte';
+	import ConfigButton        from '$lib/components/shared/buttons/ConfigButton.svelte';
+	import RightButton         from '$lib/components/shared/buttons/RightButton.svelte';
 
 	const relationParam = $derived<string>( page.params.relation || 'pareja' );
 	const memoryIdParam = $derived<string>( page.params.memoryId || '' );
@@ -116,18 +115,7 @@
 	<title>{ memory?.title || 'Memoria' } - OurMemories</title>
 </svelte:head>
 
-<div class="space-y-8 transition-all duration-300 { !isMemoryUnlocked ? 'filter blur-md pointer-events-none select-none' : '' }">
-	<!-- Botón Regresar -->
-	<div>
-		<a
-			href={`/dashboard/${ relationParam }`}
-			class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-white/70 dark:bg-white/5 border border-stone-200/60 dark:border-white/10 text-stone-600 dark:text-stone-300 hover:text-brand-accent text-xs font-bold transition-all shadow-sm active:scale-95 hover:border-brand-accent/50"
-		>
-			<ArrowLeft size={ 16 } />
-			<span>Volver a { currentRelationship?.name || 'la relación' }</span>
-		</a>
-	</div>
-
+<div class="space-y-5 transition-all duration-300 { !isMemoryUnlocked ? 'filter blur-md pointer-events-none select-none' : '' }">
 	{#if !memory}
 		<div class="py-20 text-center space-y-3 bg-white/30 dark:bg-white/1 rounded-3xl border border-dashed border-stone-200 dark:border-white/5">
 			<FolderHeart size={ 36 } class="mx-auto text-stone-400" />
@@ -154,6 +142,13 @@
 			<!-- Badges Superiores y Botones de Acción -->
 			<div class="relative z-10 flex flex-wrap items-center justify-between gap-3">
 				<div class="flex items-center gap-2">
+					<Tooltip text="Volver a { currentRelationship?.name || 'la relación' }">
+						<RightButton
+							right={ false }
+							href={`/dashboard/${ relationParam }`}
+						/>
+					</Tooltip>
+
 					<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-white bg-black/30 dark:bg-black/50 backdrop-blur-md border border-white/20 shadow-xs">
 						<Images size={ 14 } />
 						<span>{ memoryMoments.length } momentos</span>
@@ -181,7 +176,7 @@
 								aria-label="Editar memoria"
 							>
 								<Edit3 size={ 14 } />
-								<span class="hidden sm:inline">Editar</span>
+								<!-- <span class="hidden sm:inline">Editar</span> -->
 							</button>
 						</Tooltip>
 
@@ -193,7 +188,7 @@
 								aria-label="Eliminar memoria"
 							>
 								<Trash2 size={ 14 } />
-								<span class="hidden sm:inline">Eliminar</span>
+								<!-- <span class="hidden sm:inline">Eliminar</span> -->
 							</button>
 						</Tooltip>
 					{/if}
@@ -201,10 +196,11 @@
 					<button
 						type="button"
 						onclick={ () => ( isUploadOpen = true ) }
-						class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-white/90 hover:bg-white text-stone-900 text-xs font-extrabold shadow-xl hover:scale-105 active:scale-95 transition-all cursor-pointer"
+						class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl text-white text-xs font-black border border-white/25 shadow-xl hover:scale-105 hover:brightness-110 active:scale-95 transition-all cursor-pointer backdrop-blur-md"
+						style="background: linear-gradient(135deg, { currentRelationship?.color || '#f43f5e' }, { currentRelationship?.color || '#f43f5e' }dd); box-shadow: 0 10px 25px -4px { currentRelationship?.color || '#f43f5e' }77, 0 4px 12px -2px { currentRelationship?.color || '#f43f5e' }44;"
 					>
-						<Plus size={ 16 } />
-						<span>Añadir a esta Memoria</span>
+						<Plus size={ 16 } strokeWidth={ 3 } />
+						<span>Momento</span>
 					</button>
 				</div>
 			</div>
@@ -232,35 +228,19 @@
 				</div>
 
 				<!-- Botones de Modo Cine (Esquina Inferior Derecha) -->
-				<div class="flex items-center gap-2 shrink-0">
+				<div class="flex items-center gap-2.5 shrink-0">
 					<Tooltip text="Reproducir los momentos de esta memoria en pantalla inmersiva">
-						<button
-							type="button"
+						<HoverButton
 							onclick={ () => ( isCinemaOpen = true ) }
-							class="inline-flex items-center gap-2.5 px-5 py-3 rounded-2xl bg-black/40 hover:bg-black/60 text-white text-xs font-black backdrop-blur-xl border border-white/20 hover:border-white/40 shadow-2xl hover:scale-105 active:scale-95 transition-all cursor-pointer group"
-							style="box-shadow: 0 10px 30px -5px { currentRelationship?.color || '#f43f5e' }35;"
-							aria-label="Abrir Modo Cine"
-						>
-							<div
-								class="size-6 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110"
-								style="background: linear-gradient(135deg, { currentRelationship?.color || '#f43f5e' }, #7c3aed);"
-							>
-								<Film size={ 13 } class="text-white fill-white/20" />
-							</div>
-							<span class="tracking-wide">Modo Cine</span>
-						</button>
+						/>
 					</Tooltip>
 
 					{#if canManage}
 						<Tooltip text="Configurar Modo Cine (Tiempos, formatos y seguridad)">
-							<button
-								type="button"
+							<ConfigButton
 								onclick={ () => ( isCinemaConfigOpen = true ) }
-								class="size-11 rounded-2xl bg-black/40 hover:bg-black/60 text-white/90 hover:text-white flex items-center justify-center backdrop-blur-xl border border-white/20 hover:border-white/40 shadow-2xl hover:scale-105 active:scale-95 transition-all cursor-pointer"
-								aria-label="Configurar Modo Cine"
-							>
-								<SlidersHorizontal size={ 16 } />
-							</button>
+								color={ currentRelationship?.color }
+							/>
 						</Tooltip>
 					{/if}
 				</div>
@@ -268,8 +248,8 @@
 		</div>
 
 		<!-- Galería de Momentos de la Memoria -->
-		<div class="space-y-4 pt-4">
-			<div class="flex items-center gap-2">
+		<div class="space-y-0 pt-0">
+			<!-- <div class="flex items-center gap-2">
 				<div
 					class="w-8 h-8 rounded-xl flex items-center justify-center transition-colors"
 					style="background-color: { currentRelationship?.color || '#f43f5e' }18; color: { currentRelationship?.color || '#f43f5e' };"
@@ -282,7 +262,7 @@
 
                     <p class="text-[11px] text-stone-400 font-medium">Contenido registrado dentro de este capítulo</p>
 				</div>
-			</div>
+			</div> -->
 
 			<MomentList
 				moments         = { memoryMoments }
