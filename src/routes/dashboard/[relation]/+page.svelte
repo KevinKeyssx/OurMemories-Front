@@ -7,7 +7,8 @@
 		Sparkles,
 		Award,
 		Heart,
-		FolderHeart
+		FolderHeart,
+		Trophy
 	} from '@lucide/svelte';
 
 	import type { Relationship, MomentEntity, MemoryEntity } from '$lib/types';
@@ -165,12 +166,19 @@
 
 					<div>
 						<div class="flex items-center gap-2 mb-1">
-							<span
-								class="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full text-white shadow-sm"
-								style="background: { currentRelationship?.color || '#f43f5e' };"
+							<a
+								href="/dashboard/logros?relationId={ currentRelationship?.id }"
+								class="inline-flex items-center gap-1.5 transition-transform hover:scale-105 active:scale-95"
+								title="Ver Álbum de Logros y Niveles de esta relación"
 							>
-								Nivel { level }
-							</span>
+								<span
+									class="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full text-white shadow-sm flex items-center gap-1 cursor-pointer"
+									style="background: { currentRelationship?.color || '#f43f5e' };"
+								>
+									<Trophy size={ 11 } />
+									Nivel { level }
+								</span>
+							</a>
 							<span class="text-xs font-semibold text-stone-400">
 								{ points } Puntos Totales
 							</span>
@@ -217,10 +225,15 @@
 			<!-- Barra de Progreso Viva con Resplandor y Animación Tailwind -->
 			<div class="relative z-10 mt-6 pt-6 border-t border-stone-200/40 dark:border-white/5 space-y-2">
 				<div class="flex items-center justify-between text-xs font-bold">
-					<span class="text-stone-600 dark:text-stone-300 flex items-center gap-1.5">
-						<Sparkles size={ 14 } style="color: { currentRelationship?.color || '#f43f5e' };" />
-						Progreso al Nivel { level + 1 }
-					</span>
+					<a
+						href="/dashboard/logros?relationId={ currentRelationship?.id }"
+						class="text-stone-600 dark:text-stone-300 flex items-center gap-1.5 hover:text-purple-400 dark:hover:text-purple-300 transition-colors group cursor-pointer"
+						title="Ver Álbum de Logros y Ruta de Niveles"
+					>
+						<Sparkles size={ 14 } style="color: { currentRelationship?.color || '#f43f5e' };" class="group-hover:rotate-12 transition-transform duration-300" />
+						<span>Progreso al Nivel { level + 1 }</span>
+						<span class="text-[10px] font-semibold text-purple-500 dark:text-purple-400 underline decoration-purple-500/30 ml-1">Ver Álbum &rarr;</span>
+					</a>
 					<span class="text-stone-400 text-[11px] font-semibold">
 						Faltan <span class="font-bold text-stone-700 dark:text-stone-200">{ pointsRemaining } pts</span> ({ currentLevelProgress } / 100)
 					</span>
