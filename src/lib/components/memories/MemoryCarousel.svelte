@@ -160,7 +160,7 @@
 		<!-- VISTA 1: Cuadrícula con grid-cols-5 (Adaptativa: 1 -> 2 -> 3 -> 4 -> 5 columnas) -->
 		<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 pt-1">
 			<!-- Tarjeta de Acción Rápida para Crear Memoria (w-full en grid) -->
-			<button
+			<!-- <button
 				type="button"
 				onclick={ onOpenCreate }
 				class="group flex flex-col items-center justify-center h-64 w-full rounded-3xl border-2 border-dashed border-stone-200 dark:border-white/10 bg-stone-50/50 dark:bg-white/1 transition-all duration-300 p-6 text-center space-y-3 cursor-pointer hover:scale-[1.02]"
@@ -183,7 +183,7 @@
 					<p class="text-xs font-bold text-stone-800 dark:text-stone-200">Crear Memoria</p>
 					<p class="text-[10px] text-stone-400 mt-0.5">Agrupa momentos en un capítulo especial</p>
 				</div>
-			</button>
+			</button> -->
 
 			{#each memories as memory (memory.id)}
 				<MemoryCard
@@ -224,7 +224,7 @@
 				class="flex items-center gap-4 overflow-x-auto pb-4 pt-1 no-scrollbar scroll-smooth px-8 sm:px-10"
 			>
 				<!-- Tarjeta de Acción Rápida para Crear Memoria (w-60 shrink-0) -->
-				<button
+				<!-- <button
 					type="button"
 					onclick={ onOpenCreate }
 					class="group flex flex-col items-center justify-center h-64 w-60 shrink-0 rounded-3xl border-2 border-dashed border-stone-200 dark:border-white/10 bg-stone-50/50 dark:bg-white/1 transition-all duration-300 p-6 text-center space-y-3 cursor-pointer"
@@ -247,7 +247,7 @@
 						<p class="text-xs font-bold text-stone-800 dark:text-stone-200">Crear Memoria</p>
 						<p class="text-[10px] text-stone-400 mt-0.5">Agrupa momentos en un capítulo especial</p>
 					</div>
-				</button>
+				</button> -->
 
 				{#each memories as memory (memory.id)}
 					<MemoryCard
