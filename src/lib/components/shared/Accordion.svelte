@@ -1,7 +1,9 @@
 <script lang="ts">
-	import { Accordion } from 'bits-ui';
-	import { ChevronDown } from '@lucide/svelte';
-	import type { Component, Snippet } from 'svelte';
+    import type { Component, Snippet } from 'svelte';
+
+    import { Accordion }    from 'bits-ui';
+	import { ChevronDown }  from '@lucide/svelte';
+
 
 	interface Props {
 		title        : string;
@@ -25,7 +27,7 @@
 
 	$effect( () => {
 		accordionValue = defaultOpen ? value : '';
-	} );
+	});
 </script>
 
 <Accordion.Root
