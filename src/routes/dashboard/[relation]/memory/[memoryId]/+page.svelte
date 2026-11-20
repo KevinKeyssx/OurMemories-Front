@@ -28,7 +28,7 @@
 	import Tooltip             from '$lib/components/shared/Tooltip.svelte';
 	import HoverButton         from '$lib/components/shared/buttons/HoverButton.svelte';
 	import ConfigButton        from '$lib/components/shared/buttons/ConfigButton.svelte';
-	import RightButton         from '$lib/components/shared/buttons/RightButton.svelte';
+	import ArrowButton         from '$lib/components/shared/buttons/ArrowButton.svelte';
 
 	const relationParam = $derived<string>( page.params.relation || 'pareja' );
 	const memoryIdParam = $derived<string>( page.params.memoryId || '' );
@@ -143,7 +143,7 @@
 			<div class="relative z-10 flex flex-wrap items-center justify-between gap-3">
 				<div class="flex items-center gap-2">
 					<Tooltip text="Volver a { currentRelationship?.name || 'la relación' }">
-						<RightButton
+						<ArrowButton
 							right={ false }
 							href={`/dashboard/${ relationParam }`}
 						/>
