@@ -9,6 +9,7 @@
 		User,
 		ChevronDown,
 		LogOut,
+		Trophy
 	} from '@lucide/svelte';
 
     import type { Relationship }    from '$lib/types';
@@ -43,7 +44,7 @@
 
 <svelte:window onclick={() => { if ( isUserMenuOpen ) isUserMenuOpen = false; }} />
 
-<div class="fixed top-0 left-0 lg:left-24 right-0 z-30 transition-all duration-700 { isScrolled ? 'bg-brand-paper/95 dark:bg-dark-paper/95 backdrop-blur-xl shadow-xl' : 'bg-transparent' }">
+<div class="fixed top-0 left-0 lg:left-24 right-0 z-50 transition-all duration-700 { isScrolled ? 'bg-brand-paper/95 dark:bg-dark-paper/95 backdrop-blur-xl shadow-xl' : 'bg-transparent' }">
 	<header class="max-w-7xl mx-auto px-4 sm:px-6 md:px-12 transition-all duration-700 flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-8 {isScrolled ? 'py-3' : 'pt-10 pb-6'}">
 		<div class="flex items-center justify-between">
 			<div class="flex items-center gap-3">
@@ -65,7 +66,7 @@
 						aria-label="Ir al inicio"
 					>
 						<img
-							src="/logo.avif"
+							src="/logo2.avif"
 							alt="OurMemories"
 							class="object-contain transition-all duration-500 drop-shadow-md { isScrolled ? 'size-8 sm:size-11' : 'size-20 sm:size-20' }"
 						/>
@@ -111,6 +112,17 @@
 
 		<!-- Área Derecha: Perfil de Usuario Interactivo y Acciones -->
 		<div class="flex items-center gap-3 sm:gap-5">
+			<!-- Botón de Acceso Rápido a Álbum de Logros y Niveles -->
+			<a
+				href="/dashboard/logros"
+				class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-2xl border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 dark:text-amber-300 transition-all hover:scale-105 active:scale-95 shadow-sm group"
+				title="Ver Álbum de Logros y Niveles"
+			>
+				<Trophy size={15} class="text-amber-500 dark:text-amber-400 group-hover:rotate-12 transition-transform duration-300" />
+				<span class="text-xs font-extrabold tracking-tight">Nivel {userLevel}</span>
+				<span class="text-[10px] font-semibold text-stone-500 dark:text-stone-400">• {userPoints} pts</span>
+			</a>
+
 			<!-- Cápsula Interactivade Perfil del Usuario -->
 			<div class="relative">
 				<!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -194,6 +206,15 @@
 								</button>
 							</div>
 						</div>
+
+						<a
+							href="/dashboard/logros"
+							onclick={() => ( isUserMenuOpen = false )}
+							class="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-white/5 rounded-xl transition-colors"
+						>
+							<Trophy size={15} class="text-amber-500" />
+							<span>Álbum de Logros y Niveles</span>
+						</a>
 
 						<a
 							href="/profile"
