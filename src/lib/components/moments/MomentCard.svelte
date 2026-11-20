@@ -851,33 +851,52 @@
 		</div>
 	{/if}
 
+	<!-- Snippet para los tags automáticos del momento -->
+	{#snippet tagsBadgeList()}
+		<div class="flex flex-wrap items-center gap-1.5 pr-16">
+			{#each moment.tags as tag}
+				{@const badge = getTagBadge( tag )}
+				{@const TagIcon = badge.icon}
+				<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border shadow-2xs { badge.colorClass }">
+					<TagIcon size={ 10 } />
+					<span>{ badge.label }</span>
+				</span>
+			{/each}
+
+			{#if moment.metadata?.is_temporal}
+				<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-500 border border-rose-500/20 shadow-2xs">
+					<Flame size={ 10 } />
+					<span>Efímero</span>
+				</span>
+			{/if}
+		</div>
+	{/snippet}
+
 	<!-- Contenido del Momento (Clickeable para ver en pantalla completa) -->
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div
 		onclick={ handleCardContentClick }
-		class="relative z-10 p-2 cursor-pointer"
+		class="relative z-10 p-3.5 flex flex-col gap-2.5 cursor-pointer"
 	>
-		<!-- Nota de Voz de Audio -->
-		{#if isVoiceNote && mediaUrl}
-			<div class="mb-3">
-				<AudioPlayer
-					src={ mediaUrl }
-					title={ moment.title || 'Nota de Voz' }
-					duration={ moment.metadata?.audioDuration || 0 }
-					volumeOrientation="vertical"
-					{relationColor}
-					isExternalPaused={ shouldShowEphemeralCover || effectiveIsViewed || !isUnlocked || cardState.isObscured }
-					resetTrigger={ cardState.audioResetTrigger }
-					autoplayTrigger={ cardState.audioAutoplayTrigger }
-					onPlayStateChange={ ( isPlaying: boolean ) => ( cardState.isVoicePlaying = isPlaying ) }
-				/>
-			</div>
-		{/if}
+		<!-- 1. Tags automáticos siempre en la parte superior para todos los tipos de momento -->
+		{@render tagsBadgeList()}
 
-		<!-- Imagen / Video Multimedia -->
-		{#if isImage && mediaUrl}
-			<div class="aspect-4/5 overflow-hidden rounded-2xl relative shadow-inner mb-3">
+		<!-- 2. Multimedia (Audio, Imagen o Video) -->
+		{#if isVoiceNote && mediaUrl}
+			<AudioPlayer
+				src={ mediaUrl }
+				title={ moment.title || 'Nota de Voz' }
+				duration={ moment.metadata?.audioDuration || 0 }
+				volumeOrientation="vertical"
+				{relationColor}
+				isExternalPaused={ shouldShowEphemeralCover || effectiveIsViewed || !isUnlocked || cardState.isObscured }
+				resetTrigger={ cardState.audioResetTrigger }
+				autoplayTrigger={ cardState.audioAutoplayTrigger }
+				onPlayStateChange={ ( isPlaying: boolean ) => ( cardState.isVoicePlaying = isPlaying ) }
+			/>
+		{:else if isImage && mediaUrl}
+			<div class="aspect-4/5 overflow-hidden rounded-2xl relative shadow-inner">
 				{#if moment.metadata?.is_temporal}
 					<SecureEphemeralMedia
 						imageUrl={ mediaUrl }
@@ -902,7 +921,7 @@
 				{/if}
 			</div>
 		{:else if isVideo && mediaUrl}
-			<div class="aspect-video overflow-hidden rounded-2xl relative shadow-inner bg-black mb-3">
+			<div class="aspect-video overflow-hidden rounded-2xl relative shadow-inner bg-black">
 				{#if moment.metadata?.is_temporal}
 					<SecureEphemeralMedia
 						videoUrl={ mediaUrl }
@@ -926,42 +945,25 @@
 			</div>
 		{/if}
 
-		<!-- Texto / Contenido y Título -->
-		<div class="p-3 space-y-2 { moment.metadata?.is_temporal ? 'select-none' : '' } { !hasMedia && cardState.isEphemeralRevealed ? 'pb-24' : '' }">
-			<!-- Tags automáticos con colores semánticos vibrantes -->
-			<div class="flex flex-wrap items-center gap-1.5">
-				{#each moment.tags as tag}
-					{@const badge = getTagBadge( tag )}
-					{@const TagIcon = badge.icon}
-					<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border shadow-2xs { badge.colorClass }">
-						<TagIcon size={ 10 } />
-						<span>{ badge.label }</span>
-					</span>
-				{/each}
+		<!-- 3. Título y Contenido de Texto -->
+		{#if moment.title || moment.content}
+			<div class="space-y-1.5 { moment.metadata?.is_temporal ? 'select-none' : '' } { !hasMedia && cardState.isEphemeralRevealed ? 'pb-24' : '' }">
+				{#if moment.title}
+					<h4
+						class="text-sm font-extrabold line-clamp-1 transition-colors"
+						style="color: { relationColor };"
+					>
+						{ moment.title }
+					</h4>
+				{/if}
 
-				{#if moment.metadata?.is_temporal}
-					<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-500 border border-rose-500/20 shadow-2xs">
-						<Flame size={ 10 } />
-						<span>Efímero</span>
-					</span>
+				{#if moment.content}
+					<p class="text-xs text-stone-600 dark:text-stone-300 leading-relaxed font-normal { moment.tags.includes( 'quote' ) ? 'italic font-serif text-sm border-l-2 border-brand-accent/40 pl-2.5' : '' }">
+						{ moment.content }
+					</p>
 				{/if}
 			</div>
-
-			{#if moment.title}
-				<h4
-					class="text-sm font-extrabold line-clamp-1 transition-colors"
-					style="color: { relationColor };"
-				>
-					{ moment.title }
-				</h4>
-			{/if}
-
-			{#if moment.content}
-				<p class="text-xs text-stone-600 dark:text-stone-300 leading-relaxed font-normal { moment.tags.includes( 'quote' ) ? 'italic font-serif text-sm border-l-2 border-brand-accent/40 pl-2.5' : '' }">
-					{ moment.content }
-				</p>
-			{/if}
-		</div>
+		{/if}
 	</div>
 
 	<!-- Línea de cuenta regresiva con efecto de mecha/fuego quemándose -->
