@@ -1,47 +1,116 @@
-<!-- LogoCover Component: Interactive 3D Holographic Chip for OurMemories -->
-<button class="m6-chip select-none" type="button" aria-label="OurMemories Logo">
+<script lang="ts">
+	import type { Snippet } from 'svelte';
+	import type { AchievementTier } from '$lib/types/gamification';
+
+	interface Props {
+		children   ?: Snippet;
+		tier       ?: AchievementTier | 'DEFAULT';
+		unlocked   ?: boolean;
+		as         ?: 'button' | 'div';
+		width      ?: string;
+		height     ?: string;
+		class      ?: string;
+		style      ?: string;
+		onclick    ?: () => void;
+		ariaLabel  ?: string;
+	}
+
+	let {
+		children,
+		tier = 'DEFAULT',
+		unlocked = true,
+		as = 'button',
+		width,
+		height,
+		class: customClass = '',
+		style: customStyle = '',
+		onclick,
+		ariaLabel = 'Interactive Chip'
+	}: Props = $props();
+
+	const tierClass = $derived<string>(
+		!unlocked
+			? 'm6-chip--locked'
+			: tier === 'PURPLE'
+				? 'm6-chip--purple'
+				: tier === 'GOLD'
+					? 'm6-chip--gold'
+					: tier === 'SILVER'
+						? 'm6-chip--silver'
+						: 'm6-chip--default'
+	);
+
+	function handleClick( e: MouseEvent ): void {
+		if ( onclick ) {
+			e.stopPropagation();
+			onclick();
+		}
+	}
+
+	function handleKeydown( e: KeyboardEvent ): void {
+		if ( ( e.key === 'Enter' || e.key === ' ' ) && onclick ) {
+			e.preventDefault();
+			e.stopPropagation();
+			onclick();
+		}
+	}
+</script>
+
+{#snippet chipInner()}
 	<span class="m6-chip__tilt">
 		<span class="m6-chip__face">
 			<span class="m6-chip__die"></span>
-			<span class="m6-chip__mark">
-				<img
-					src="/logo.avif"
-					alt="OurMemories Logo"
-					class="m6-chip__logo-img"
-				/>
-			</span>
-			<span class="m6-chip__glare"></span>
+			{#if children}
+				<div class="m6-chip__content">
+					{@render children()}
+				</div>
+			{:else}
+				<span class="m6-chip__mark">
+					<img
+						src="/logo.avif"
+						alt="OurMemories Logo"
+						class="m6-chip__logo-img"
+					/>
+				</span>
+			{/if}
+			{#if unlocked}
+				<span class="m6-chip__glare"></span>
+			{/if}
 		</span>
-		<span class="m6-chip__spark"></span>
-		<span class="m6-chip__spark"></span>
+		{#if unlocked}
+			<span class="m6-chip__spark"></span>
+			<span class="m6-chip__spark"></span>
+		{/if}
 	</span>
-	<span class="m6-chip__zones">
-		<span class="m6-chip__zone"></span>
-		<span class="m6-chip__zone"></span>
-		<span class="m6-chip__zone"></span>
-		<span class="m6-chip__zone"></span>
-		<span class="m6-chip__zone"></span>
-		<span class="m6-chip__zone"></span>
-		<span class="m6-chip__zone"></span>
-		<span class="m6-chip__zone"></span>
-		<span class="m6-chip__zone"></span>
-		<span class="m6-chip__zone"></span>
-		<span class="m6-chip__zone"></span>
-		<span class="m6-chip__zone"></span>
-		<span class="m6-chip__zone"></span>
-		<span class="m6-chip__zone"></span>
-		<span class="m6-chip__zone"></span>
-		<span class="m6-chip__zone"></span>
-		<span class="m6-chip__zone"></span>
-		<span class="m6-chip__zone"></span>
-		<span class="m6-chip__zone"></span>
-		<span class="m6-chip__zone"></span>
-		<span class="m6-chip__zone"></span>
-		<span class="m6-chip__zone"></span>
-		<span class="m6-chip__zone"></span>
-		<span class="m6-chip__zone"></span>
-		<span class="m6-chip__zone"></span>
-	</span>
+	{#if unlocked}
+		<span class="m6-chip__zones">
+			<span class="m6-chip__zone"></span>
+			<span class="m6-chip__zone"></span>
+			<span class="m6-chip__zone"></span>
+			<span class="m6-chip__zone"></span>
+			<span class="m6-chip__zone"></span>
+			<span class="m6-chip__zone"></span>
+			<span class="m6-chip__zone"></span>
+			<span class="m6-chip__zone"></span>
+			<span class="m6-chip__zone"></span>
+			<span class="m6-chip__zone"></span>
+			<span class="m6-chip__zone"></span>
+			<span class="m6-chip__zone"></span>
+			<span class="m6-chip__zone"></span>
+			<span class="m6-chip__zone"></span>
+			<span class="m6-chip__zone"></span>
+			<span class="m6-chip__zone"></span>
+			<span class="m6-chip__zone"></span>
+			<span class="m6-chip__zone"></span>
+			<span class="m6-chip__zone"></span>
+			<span class="m6-chip__zone"></span>
+			<span class="m6-chip__zone"></span>
+			<span class="m6-chip__zone"></span>
+			<span class="m6-chip__zone"></span>
+			<span class="m6-chip__zone"></span>
+			<span class="m6-chip__zone"></span>
+		</span>
+	{/if}
 	<svg class="m6-chip__defs" aria-hidden="true">
 		<filter id="m6-chip-grain" x="0" y="0" width="100%" height="100%">
 			<feTurbulence
@@ -69,29 +138,58 @@
 			<feComposite in="speck" in2="SourceGraphic" operator="in"></feComposite>
 		</filter>
 	</svg>
-</button>
+{/snippet}
+
+{#if as === 'div'}
+	<div
+		class="m6-chip select-none {tierClass} {customClass}"
+		role="button"
+		tabindex="0"
+		onclick={handleClick}
+		onkeydown={handleKeydown}
+		aria-label={ariaLabel}
+		style="{width ? `--chip-w: ${width};` : ''} {height ? `--chip-h: ${height};` : ''} {customStyle}"
+	>
+		{@render chipInner()}
+	</div>
+{:else}
+	<button
+		class="m6-chip select-none {tierClass} {customClass}"
+		type="button"
+		onclick={handleClick}
+		aria-label={ariaLabel}
+		style="{width ? `--chip-w: ${width};` : ''} {height ? `--chip-h: ${height};` : ''} {customStyle}"
+	>
+		{@render chipInner()}
+	</button>
+{/if}
 
 <style>
 .m6-chip {
 	--x: 2;
 	--y: 2;
 	position: relative;
-	display: inline-block;
-	width: 16em;
-	height: 16em;
+	display: block;
+	width: var(--chip-w, 16em);
+	height: var(--chip-h, 16em);
+	min-height: var(--chip-min-h, unset);
 	padding: 0;
 	border: 0;
 	border-radius: 1.5em;
 	background: none;
 	cursor: pointer;
 	perspective: 42em;
+	text-align: left;
+	box-sizing: border-box;
 }
 
 .m6-chip__tilt {
 	position: relative;
-	display: block;
+	display: flex;
+	flex-direction: column;
 	width: 100%;
 	height: 100%;
+	min-height: inherit;
 	padding: 0.18em;
 	box-sizing: border-box;
 	overflow: hidden;
@@ -134,14 +232,29 @@
 
 .m6-chip__face {
 	position: relative;
-	display: grid;
-	place-items: center;
+	display: flex;
+	flex-direction: column;
 	width: 100%;
 	height: 100%;
+	min-height: inherit;
 	overflow: hidden;
 	border-radius: 1.35em;
 	background: #0d051a;
 	box-shadow: 0 0 0 0.03em rgba(255, 255, 255, 0.22);
+}
+
+.m6-chip__content {
+	position: relative;
+	z-index: 2;
+	width: 100%;
+	height: 100%;
+	min-height: inherit;
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	padding: 1.25rem;
+	box-sizing: border-box;
 }
 
 .m6-chip__face::before {
@@ -226,6 +339,7 @@
 	justify-content: center;
 	width: 68%;
 	height: 68%;
+	margin: auto;
 	filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.7)) drop-shadow(0 0 20px rgba(251, 191, 36, 0.35));
 	transition:
 		transform 0.7s cubic-bezier(0.22, 1, 0.36, 1),
@@ -404,6 +518,236 @@
 	transition-duration: 0.3s;
 }
 
+/* ========================================================
+   MODIFICADORES POR TIER (PURPLE, GOLD, SILVER, LOCKED)
+   ======================================================== */
+
+/* --- Tier PURPLE --- */
+.m6-chip--purple .m6-chip__tilt {
+	background: radial-gradient(35% 35% at 100% 0%, #e879f9, transparent),
+		linear-gradient(
+			45deg,
+			#c084fc 0%,
+			#a855f7 30%,
+			#7c3aed 55%,
+			#c026d3 75%,
+			#e879f9 100%
+		);
+}
+
+.m6-chip--purple:hover .m6-chip__tilt {
+	box-shadow:
+		inset 0 0 0 0.035em rgba(255, 255, 255, 0.9),
+		calc((2 - var(--x)) * 0.35em) calc(1.2em + (2 - var(--y)) * 0.35em) 2.4em -0.6em rgba(0, 0, 0, 0.7),
+		0 0 3.2em -0.2em rgba(168, 85, 247, 0.65),
+		0 0 4.2em 0.2em rgba(217, 70, 239, 0.45);
+}
+
+.m6-chip--purple .m6-chip__spark {
+	background: linear-gradient(90deg, rgba(168, 85, 247, 0), #c084fc 60%, #ffffff);
+	box-shadow:
+		0 0 0.35em 0.08em #c084fc,
+		0 0 1.2em 0.35em rgba(168, 85, 247, 0.6),
+		0 0 1.8em 0.4em rgba(124, 58, 237, 0.7);
+}
+
+.m6-chip--purple .m6-chip__face {
+	background: #100820;
+}
+
+.m6-chip--purple .m6-chip__face::before {
+	background:
+		radial-gradient(ellipse 65% 55% at 25% 75%, rgba(192, 38, 211, 0.25) 0%, transparent 60%),
+		radial-gradient(ellipse 65% 55% at 75% 25%, rgba(168, 85, 247, 0.28) 0%, transparent 60%),
+		radial-gradient(circle at 50% 50%, rgba(124, 58, 237, 0.3) 0%, transparent 70%),
+		linear-gradient(135deg, rgba(192, 38, 211, 0.15) 0%, rgba(168, 85, 247, 0.2) 50%, rgba(22, 11, 41, 0.4) 100%);
+}
+
+/* --- Tier GOLD --- */
+.m6-chip--gold .m6-chip__tilt {
+	background: radial-gradient(35% 35% at 100% 0%, #fef08a, transparent),
+		linear-gradient(
+			45deg,
+			#fef08a 0%,
+			#fbbf24 30%,
+			#f59e0b 55%,
+			#d97706 75%,
+			#b45309 100%
+		);
+}
+
+.m6-chip--gold:hover .m6-chip__tilt {
+	box-shadow:
+		inset 0 0 0 0.035em rgba(255, 255, 255, 0.9),
+		calc((2 - var(--x)) * 0.35em) calc(1.2em + (2 - var(--y)) * 0.35em) 2.4em -0.6em rgba(0, 0, 0, 0.7),
+		0 0 3em -0.2em rgba(251, 191, 36, 0.65),
+		0 0 4.2em 0.2em rgba(245, 158, 11, 0.45);
+}
+
+.m6-chip--gold .m6-chip__spark {
+	background: linear-gradient(90deg, rgba(251, 191, 36, 0), #fbbf24 60%, #ffffff);
+	box-shadow:
+		0 0 0.35em 0.08em #fbbf24,
+		0 0 1.2em 0.35em rgba(245, 158, 11, 0.6),
+		0 0 1.8em 0.4em rgba(217, 119, 6, 0.7);
+}
+
+.m6-chip--gold .m6-chip__face {
+	background: #120a03;
+}
+
+.m6-chip--gold .m6-chip__face::before {
+	background:
+		radial-gradient(ellipse 65% 55% at 25% 75%, rgba(245, 158, 11, 0.28) 0%, transparent 60%),
+		radial-gradient(ellipse 65% 55% at 75% 25%, rgba(251, 191, 36, 0.25) 0%, transparent 60%),
+		radial-gradient(circle at 50% 50%, rgba(217, 119, 6, 0.25) 0%, transparent 70%),
+		linear-gradient(135deg, rgba(251, 191, 36, 0.18) 0%, rgba(245, 158, 11, 0.2) 50%, rgba(30, 15, 3, 0.4) 100%);
+}
+
+/* --- Tier SILVER --- */
+.m6-chip--silver .m6-chip__tilt {
+	background: radial-gradient(35% 35% at 100% 0%, #ffffff, transparent),
+		linear-gradient(
+			45deg,
+			#ffffff 0%,
+			#e2e8f0 30%,
+			#cbd5e1 55%,
+			#94a3b8 75%,
+			#64748b 100%
+		);
+}
+
+.m6-chip--silver:hover .m6-chip__tilt {
+	box-shadow:
+		inset 0 0 0 0.035em rgba(255, 255, 255, 0.9),
+		calc((2 - var(--x)) * 0.35em) calc(1.2em + (2 - var(--y)) * 0.35em) 2.4em -0.6em rgba(0, 0, 0, 0.7),
+		0 0 2.8em -0.2em rgba(226, 232, 240, 0.55),
+		0 0 3.8em 0.2em rgba(148, 163, 184, 0.35);
+}
+
+.m6-chip--silver .m6-chip__spark {
+	background: linear-gradient(90deg, rgba(203, 213, 225, 0), #e2e8f0 60%, #ffffff);
+	box-shadow:
+		0 0 0.35em 0.08em #ffffff,
+		0 0 1.2em 0.35em rgba(203, 213, 225, 0.6),
+		0 0 1.8em 0.4em rgba(148, 163, 184, 0.5);
+}
+
+.m6-chip--silver .m6-chip__face {
+	background: #090c12;
+}
+
+.m6-chip--silver .m6-chip__face::before {
+	background:
+		radial-gradient(ellipse 65% 55% at 25% 75%, rgba(148, 163, 184, 0.22) 0%, transparent 60%),
+		radial-gradient(ellipse 65% 55% at 75% 25%, rgba(203, 213, 225, 0.25) 0%, transparent 60%),
+		radial-gradient(circle at 50% 50%, rgba(100, 116, 139, 0.25) 0%, transparent 70%),
+		linear-gradient(135deg, rgba(226, 232, 240, 0.15) 0%, rgba(148, 163, 184, 0.18) 50%, rgba(15, 23, 42, 0.4) 100%);
+}
+
+/* --- Estado LOCKED (Inmóvil, estático sin movimiento ni 3D tilt) --- */
+.m6-chip--locked {
+	cursor: pointer;
+	perspective: none;
+}
+
+.m6-chip--locked .m6-chip__tilt,
+.m6-chip--locked:hover .m6-chip__tilt,
+.m6-chip--locked:active .m6-chip__tilt,
+.m6-chip--locked:focus .m6-chip__tilt,
+.m6-chip--locked:focus-visible .m6-chip__tilt {
+	transform: none !important;
+	transition: opacity 0.3s ease, filter 0.3s ease, box-shadow 0.3s ease !important;
+}
+
+.m6-chip--locked .m6-chip__tilt {
+	background: linear-gradient(
+		45deg,
+		#3f3f46 0%,
+		#27272a 40%,
+		#18181b 70%,
+		#09090b 100%
+	);
+	box-shadow:
+		inset 0 0 0 0.035em rgba(255, 255, 255, 0.12),
+		0 0.3em 0.8em -0.6em rgba(0, 0, 0, 0.5);
+	filter: grayscale(0.85);
+	opacity: 0.75;
+}
+
+.m6-chip--locked:hover .m6-chip__tilt {
+	box-shadow:
+		inset 0 0 0 0.035em rgba(255, 255, 255, 0.22),
+		0 0.3em 0.8em -0.6em rgba(0, 0, 0, 0.6);
+	filter: grayscale(0.65) brightness(1.05);
+	opacity: 0.92;
+}
+
+.m6-chip--locked:active .m6-chip__tilt {
+	box-shadow:
+		inset 0 0 0 0.035em rgba(255, 255, 255, 0.22),
+		0 0.3em 0.8em -0.6em rgba(0, 0, 0, 0.6);
+	filter: grayscale(0.65) brightness(1.02);
+	opacity: 0.92;
+}
+
+.m6-chip--locked .m6-chip__tilt::after,
+.m6-chip--locked:hover .m6-chip__tilt::after,
+.m6-chip--locked:active .m6-chip__tilt::after {
+	display: none !important;
+	transform: none !important;
+}
+
+.m6-chip--locked .m6-chip__spark,
+.m6-chip--locked:hover .m6-chip__spark,
+.m6-chip--locked:active .m6-chip__spark {
+	display: none !important;
+}
+
+.m6-chip--locked .m6-chip__glare,
+.m6-chip--locked:hover .m6-chip__glare,
+.m6-chip--locked:active .m6-chip__glare {
+	display: none !important;
+}
+
+.m6-chip--locked .m6-chip__mark,
+.m6-chip--locked:hover .m6-chip__mark,
+.m6-chip--locked:active .m6-chip__mark {
+	transform: none !important;
+}
+
+.m6-chip--locked .m6-chip__face {
+	background: #0d0a12;
+}
+
+.m6-chip--locked .m6-chip__face::before,
+.m6-chip--locked:hover .m6-chip__face::before,
+.m6-chip--locked:active .m6-chip__face::before {
+	transform: none !important;
+	opacity: 0.12;
+	filter: grayscale(1);
+}
+
+.m6-chip--locked .m6-chip__die {
+	opacity: 0.08;
+	mask: none !important;
+}
+
+.m6-chip--locked:hover .m6-chip__die,
+.m6-chip--locked:active .m6-chip__die {
+	opacity: 0.12;
+	mask: none !important;
+}
+
+.m6-chip--locked .m6-chip__content {
+	opacity: 0.75;
+	transition: opacity 0.3s ease;
+}
+
+.m6-chip--locked:hover .m6-chip__content {
+	opacity: 0.95;
+}
+
 @keyframes m6-chip-run {
 	to {
 		offset-distance: 100%;
@@ -538,5 +882,41 @@
 		inset 0 0 0 0.035em #ffffff,
 		0 0.4em 1em -0.4em rgba(124, 58, 237, 0.2),
 		0 0 2.8em -0.2em rgba(251, 191, 36, 0.5);
+}
+
+:global(.light) .m6-chip--locked .m6-chip__tilt,
+:global(.light) .m6-chip--locked:hover .m6-chip__tilt,
+:global(.light) .m6-chip--locked:active .m6-chip__tilt,
+:global(.light) .m6-chip--locked:focus .m6-chip__tilt,
+:global(.light) .m6-chip--locked:focus-visible .m6-chip__tilt {
+	transform: none !important;
+}
+
+:global(.light) .m6-chip--locked .m6-chip__tilt {
+	background: linear-gradient(
+		45deg,
+		#f4f4f5 0%,
+		#e4e4e7 40%,
+		#d4d4d8 70%,
+		#a1a1aa 100%
+	);
+	box-shadow:
+		inset 0 0 0 0.035em rgba(0, 0, 0, 0.08),
+		0 0.3em 0.8em -0.6em rgba(0, 0, 0, 0.1);
+	filter: grayscale(0.85);
+	opacity: 0.8;
+}
+
+:global(.light) .m6-chip--locked:hover .m6-chip__tilt {
+	box-shadow:
+		inset 0 0 0 0.035em rgba(0, 0, 0, 0.14),
+		0 0.3em 0.8em -0.6em rgba(0, 0, 0, 0.15);
+	filter: grayscale(0.65) brightness(1.02);
+	opacity: 0.95;
+}
+
+:global(.light) .m6-chip--locked .m6-chip__face {
+	background: #f8fafc;
+	box-shadow: 0 0 0 0.03em rgba(0, 0, 0, 0.08);
 }
 </style>
