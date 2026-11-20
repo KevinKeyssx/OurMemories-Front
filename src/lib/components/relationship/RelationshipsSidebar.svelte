@@ -125,14 +125,14 @@
 	<a
 		href="/dashboard"
 		class="w-14 h-14 rounded-2xl mb-12 flex items-center justify-center text-white shadow-lg hover:scale-105 active:scale-95 transition-all duration-300 shrink-0 group { isHomeActive ? 'ring-3 ring-amber-400 shadow-amber-500/50 scale-105' : 'opacity-90 hover:opacity-100' }"
-		style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 35%, #e11d48 75%, #7c3aed 100%); box-shadow: 0 10px 25px -4px rgba(245, 158, 11, 0.45), 0 4px 12px -2px rgba(225, 29, 72, 0.25);"
+		// style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 35%, #e11d48 75%, #7c3aed 100%); box-shadow: 0 10px 25px -4px rgba(245, 158, 11, 0.45), 0 4px 12px -2px rgba(225, 29, 72, 0.25);"
 		title="Ir al Dashboard Principal"
 		aria-label="Ir al Dashboard Principal"
 	>
 		<img
-			src="/logo.avif"
+			src="/logo2.avif"
 			alt="OurMemories"
-			class="size-9 object-contain drop-shadow-md select-none transition-transform duration-300 group-hover:scale-105"
+			class="size-12 object-contain drop-shadow-md select-none transition-transform duration-300 group-hover:scale-105"
 		/>
 	</a>
 
