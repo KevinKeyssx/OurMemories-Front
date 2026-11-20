@@ -191,3 +191,6 @@ export interface LegacyGiftPack {
 	description : string;
 	icon        : string;
 }
+
+export * from './types/gamification';
+
