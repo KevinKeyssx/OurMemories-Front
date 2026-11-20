@@ -69,13 +69,15 @@
 	function handleUnlockSuccess(): void {
 		if ( unlockTarget ) {
 			if ( unlockTarget.type === 'memory' ) {
-				const mem = unlockTarget.item as MemoryEntity;
-				const rel = relationshipsList.find( ( r: Relationship ) => r.id === mem.relationship_id ) || relationshipsList[ 0 ];
-				const relPath = rel?.path_name || 'pareja';
-				window.location.href = `/dashboard/${ relPath }/memory/${ mem.id }`;
+				const mem       = unlockTarget.item as MemoryEntity;
+				const rel       = relationshipsList.find( ( r: Relationship ) => r.id === mem.relationship_id ) || relationshipsList[ 0 ];
+				const relPath   = rel?.path_name || 'pareja';
+
+                window.location.href = `/dashboard/${ relPath }/memory/${ mem.id }`;
 			} else {
 				const moment = unlockTarget.item as MomentEntity;
-				memoriesStore.unlockMoment( moment.id );
+
+                memoriesStore.unlockMoment( moment.id );
 			}
 		}
 
@@ -120,12 +122,15 @@
 				<div>
 					<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-accent/10 text-brand-accent text-xs font-bold mb-2">
 						<Sparkles size={ 14 } />
-						<span>Centro Global de Memorias</span>
+
+                        <span>Centro Global de Memorias</span>
 					</div>
-					<h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-stone-50">
+
+                    <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-stone-50">
 						Hola, { memoriesStore.currentUser.name }
 					</h2>
-					<p class="text-xs sm:text-sm text-stone-500 dark:text-stone-400 mt-1 max-w-xl">
+
+                    <p class="text-xs sm:text-sm text-stone-500 dark:text-stone-400 mt-1 max-w-xl">
 						Explora y revive todos tus recuerdos, dedicatorias y momentos especiales distribuidos en tus relaciones.
 					</p>
 				</div>
@@ -137,9 +142,11 @@
 					<div class="w-11 h-11 rounded-xl bg-purple-500/15 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
 						<Heart size={ 22 } />
 					</div>
-					<div>
+
+                    <div>
 						<p class="text-[11px] font-bold text-stone-400 uppercase tracking-wider">Relaciones</p>
-						<p class="text-xl font-extrabold text-stone-900 dark:text-white">{ relationshipsList.length }</p>
+
+                        <p class="text-xl font-extrabold text-stone-900 dark:text-white">{ relationshipsList.length }</p>
 					</div>
 				</div>
 
@@ -147,9 +154,11 @@
 					<div class="w-11 h-11 rounded-xl bg-brand-accent/15 text-brand-accent flex items-center justify-center shrink-0">
 						<FolderHeart size={ 22 } />
 					</div>
-					<div>
+
+                    <div>
 						<p class="text-[11px] font-bold text-stone-400 uppercase tracking-wider">Memorias</p>
-						<p class="text-xl font-extrabold text-stone-900 dark:text-white">{ allMemories.length }</p>
+
+                        <p class="text-xl font-extrabold text-stone-900 dark:text-white">{ allMemories.length }</p>
 					</div>
 				</div>
 
@@ -157,9 +166,11 @@
 					<div class="w-11 h-11 rounded-xl bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
 						<Layers size={ 22 } />
 					</div>
-					<div>
+
+                    <div>
 						<p class="text-[11px] font-bold text-stone-400 uppercase tracking-wider">Momentos</p>
-						<p class="text-xl font-extrabold text-stone-900 dark:text-white">{ allMoments.length }</p>
+
+                        <p class="text-xl font-extrabold text-stone-900 dark:text-white">{ allMoments.length }</p>
 					</div>
 				</div>
 
@@ -167,9 +178,11 @@
 					<div class="w-11 h-11 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
 						<Award size={ 22 } />
 					</div>
-					<div>
+
+                    <div>
 						<p class="text-[11px] font-bold text-stone-400 uppercase tracking-wider">Puntos Globales</p>
-						<p class="text-xl font-extrabold text-stone-900 dark:text-white">{ totalPoints } pts</p>
+
+                        <p class="text-xl font-extrabold text-stone-900 dark:text-white">{ totalPoints } pts</p>
 					</div>
 				</div>
 			</div>
@@ -183,7 +196,8 @@
 				<h3 class="text-lg sm:text-xl font-extrabold tracking-tight text-stone-900 dark:text-stone-50">
 					Tus Relaciones
 				</h3>
-				<p class="text-xs text-stone-400">
+
+                <p class="text-xs text-stone-400">
 					Espacios dedicados con recuerdos y dinámicas independientes
 				</p>
 			</div>
@@ -238,7 +252,8 @@
 							<h4 class="text-base font-extrabold text-stone-900 dark:text-white group-hover:text-brand-accent transition-colors">
 								{ rel.name }
 							</h4>
-							<p class="text-xs text-stone-400 mt-0.5">
+
+                            <p class="text-xs text-stone-400 mt-0.5">
 								{ rel.points || 0 } puntos acumulados
 							</p>
 						</div>
@@ -247,13 +262,16 @@
 					<div class="pt-5 mt-4 border-t border-stone-100 dark:border-white/5 flex items-center justify-between text-xs">
 						<div class="flex items-center gap-3 text-stone-500 dark:text-stone-400">
 							<span class="font-medium">{ relMemoriesCount } memorias</span>
-							<span class="text-stone-300 dark:text-stone-600">•</span>
-							<span class="font-medium">{ relMomentsCount } momentos</span>
+
+                            <span class="text-stone-300 dark:text-stone-600">•</span>
+
+                            <span class="font-medium">{ relMomentsCount } momentos</span>
 						</div>
 
 						<span class="text-brand-accent font-bold inline-flex items-center gap-1 group-hover:translate-x-1 transition-transform">
 							<span>Abrir</span>
-							<ArrowRight size={ 14 } />
+
+                            <ArrowRight size={ 14 } />
 						</span>
 					</div>
 				</a>
@@ -269,7 +287,8 @@
 					<h3 class="text-lg sm:text-xl font-extrabold tracking-tight text-stone-900 dark:text-stone-50">
 						Memorias Destacadas
 					</h3>
-					<p class="text-xs text-stone-400">
+
+                    <p class="text-xs text-stone-400">
 						Colecciones de recuerdos de todas tus relaciones
 					</p>
 				</div>
@@ -278,11 +297,11 @@
 			<div class="flex items-center gap-5 overflow-x-auto no-scrollbar py-2 px-1">
 				{#each allMemories as memory (memory.id)}
 					<MemoryCard
-						{memory}
-						relationPath={ getRelationshipPath( memory.relationship_id ) }
-						color={ getRelationshipColor( memory.relationship_id ) }
-						momentsCount={ getMomentsCountForMemory( memory.id ) }
-						onUnlock={ handleUnlockMemory }
+						{ memory }
+						relationPath    = { getRelationshipPath( memory.relationship_id ) }
+						color           = { getRelationshipColor( memory.relationship_id ) }
+						momentsCount    = { getMomentsCountForMemory( memory.id ) }
+						onUnlock        = { handleUnlockMemory }
 					/>
 				{/each}
 			</div>
@@ -296,29 +315,30 @@
 				<h3 class="text-lg sm:text-xl font-extrabold tracking-tight text-stone-900 dark:text-stone-50">
 					Momentos Recientes
 				</h3>
-				<p class="text-xs text-stone-400">
+
+                <p class="text-xs text-stone-400">
 					Fotos, videos y dedicatorias capturadas
 				</p>
 			</div>
 		</div>
 
 		<MomentList
-			moments={allMoments}
-			currentUserId={memoriesStore.currentUser.id}
-			relationName="Global"
-			color="#7C3AED"
-			onDelete={handleDeleteMoment}
-			onUnlock={handleUnlockMoment}
-			onRecordView={handleRecordView}
+			moments         = { allMoments }
+			currentUserId   = { memoriesStore.currentUser.id }
+			relationName    = "Global"
+			color           = "#7C3AED"
+			onDelete        = { handleDeleteMoment }
+			onUnlock        = { handleUnlockMoment }
+			onRecordView    = { handleRecordView }
 		/>
 	</section>
 </div>
 
 {#if isUnlockOpen && unlockTarget}
 	<SecurityUnlockModal
-		isOpen={isUnlockOpen}
-		correctPassword={unlockTarget.type === 'memory' ? ( unlockTarget.item as MemoryEntity ).password : ( ( unlockTarget.item as MomentEntity ).metadata?.password || '' )}
-		onClose={() => {
+		isOpen          = { isUnlockOpen }
+		correctPassword = { unlockTarget.type === 'memory' ? ( unlockTarget.item as MemoryEntity ).password : ( ( unlockTarget.item as MomentEntity ).metadata?.password || '' )}
+		onClose         = {() => {
 			isUnlockOpen = false;
 			unlockTarget = null;
 		}}
